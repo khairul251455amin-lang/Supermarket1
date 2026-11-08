@@ -1,0 +1,6 @@
+{
+  "name": "Supermarket Multi-Vendor Marketplace",
+  "description": "A modern, professional customer marketplace for browsing categories, searching multi-vendor products, managing carts, checkout with Cash on Delivery, and tracking orders.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
