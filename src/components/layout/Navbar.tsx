@@ -130,8 +130,8 @@ export const Navbar: React.FC = () => {
 
         {/* Zone 3: Interactive Action Hub & Seller Switcher */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          {/* Seller Console Switcher Button (Phase 2) */}
-          {currentSeller ? (
+          {/* Seller Console Switcher Button (for authenticated sellers) */}
+          {currentSeller && (
             <button
               onClick={() =>
                 navigateTo(currentView === 'seller-dashboard' ? 'home' : 'seller-dashboard')
@@ -149,15 +149,6 @@ export const Navbar: React.FC = () => {
                   {pendingSellerOrdersCount + unreadSellerNotificationsCount}
                 </span>
               )}
-            </button>
-          ) : (
-            <button
-              onClick={() => navigateTo('seller-register')}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold text-xs border border-blue-200/80 transition-colors cursor-pointer min-h-[38px]"
-            >
-              <Store className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Become a Seller</span>
-              <span className="sm:hidden">Sell</span>
             </button>
           )}
 
