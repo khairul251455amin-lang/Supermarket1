@@ -60,6 +60,8 @@ export const db: Firestore = firebaseConfig.firestoreDatabaseId && firebaseConfi
   ? getFirestore(app, firebaseConfig.firestoreDatabaseId)
   : getFirestore(app);
 export const storage: FirebaseStorage = getStorage(app);
+storage.maxUploadRetryTime = 6000;
+storage.maxOperationRetryTime = 6000;
 
 export enum OperationType {
   CREATE = 'create',

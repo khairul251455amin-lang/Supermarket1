@@ -11,10 +11,12 @@ import {
   AlertCircle,
   Sparkles,
   Info,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { useMarketplace } from '../../../context/MarketplaceContext';
 import { PhotoUploader } from '../../common/PhotoUploader';
 import { uploadProductImage } from '../../../services/firebaseStorage';
+import { formatFileSize } from '../../../services/imageCompression';
 
 export const AddEditProductTab: React.FC = () => {
   const {
@@ -38,11 +40,25 @@ export const AddEditProductTab: React.FC = () => {
 
   // Exactly two product images required per prompt specification
   const [image1Url, setImage1Url] = useState<string>('');
+  const [image1Size, setImage1Size] = useState<string>('');
   const [image2Url, setImage2Url] = useState<string>('');
-  const [tempProductId] = useState(() => `prod_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`);
+  const [image2Size, setImage2Size] = useState<string>('');
+
+  // Stable product ID prefix for permanent asset path referencing
+  const [tempProductId] = useState(
+    () => `prod_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`
+  );
 
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const isBothPhotosReady = Boolean(image1Url && image2Url);
+  const isFormValid =
+    name.trim().length > 0 &&
+    parseFloat(originalPrice) > 0 &&
+    parseInt(stock, 10) >= 0 &&
+    isBothPhotosReady;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,7 +66,7 @@ export const AddEditProductTab: React.FC = () => {
     setSuccessMsg(null);
 
     if (!name.trim()) {
-      setErrorMsg('Please enter a product name.');
+      setErrorMsg('Please enter a product title.');
       return;
     }
 
@@ -70,7 +86,7 @@ export const AddEditProductTab: React.FC = () => {
         return;
       }
       if (discPriceNum >= origPriceNum) {
-        setErrorMsg('Discount price must be less than the original price.');
+        setErrorMsg('Discount price must be lower than the original price.');
         return;
       }
       discPercentNum = Math.round(((origPriceNum - discPriceNum) / origPriceNum) * 100);
@@ -84,27 +100,38 @@ export const AddEditProductTab: React.FC = () => {
 
     // Require exactly two product images before publishing
     if (!image1Url || !image2Url) {
-      setErrorMsg('Requirement: Each product must have exactly two uploaded photos. Please upload both Product Image 1 and Product Image 2 before publishing.');
+      setErrorMsg(
+        'Requirement: Each product must have exactly two uploaded photos. Please upload both Product Image 1 and Product Image 2 before publishing.'
+      );
       return;
     }
 
-    const published = addSellerProduct({
-      name: name.trim(),
-      category,
-      subcategory: subcategory.trim() || undefined,
-      description: description.trim() || `${name.trim()} from ${currentSeller.shopName}.`,
-      originalPrice: origPriceNum,
-      discountedPrice: discPriceNum,
-      discountPercentage: discPercentNum,
-      stock: stockNum,
-      images: [image1Url, image2Url],
-      isAvailable,
-    });
+    setIsSubmitting(true);
 
-    setSuccessMsg(`"${published.name}" published with 2 optimized photos! Immediately live on customer website.`);
-    setTimeout(() => {
-      setSellerDashboardTab('products');
-    }, 1200);
+    try {
+      const published = addSellerProduct({
+        name: name.trim(),
+        category,
+        subcategory: subcategory.trim() || undefined,
+        description: description.trim() || `${name.trim()} from ${currentSeller.shopName}.`,
+        originalPrice: origPriceNum,
+        discountedPrice: discPriceNum,
+        discountPercentage: discPercentNum,
+        stock: stockNum,
+        images: [image1Url, image2Url],
+        isAvailable,
+      });
+
+      setSuccessMsg(
+        `"${published.name}" published with 2 optimized photos! Immediately live on customer website.`
+      );
+      setTimeout(() => {
+        setSellerDashboardTab('products');
+      }, 1200);
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : 'Failed to publish product.');
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -248,7 +275,7 @@ export const AddEditProductTab: React.FC = () => {
                     setHasDiscount(e.target.checked);
                     if (!e.target.checked) setDiscountedPrice('');
                   }}
-                  className="rounded text-blue-600 focus:ring-blue-500 w-4 h-4"
+                  className="rounded text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
                 />
                 <span className="text-xs font-semibold text-slate-800">Has Promotional Discount</span>
               </label>
@@ -287,15 +314,34 @@ export const AddEditProductTab: React.FC = () => {
               <span>Required Product Photos</span>
               <span className="text-rose-500 font-bold">* (Exactly 2 Photos)</span>
             </h3>
-            <span className="text-[11px] text-slate-500 font-medium">
-              Compressed client-side to 50–200 KB &le; 200 KB maximum
-            </span>
+
+            {/* Photo Counter Pill */}
+            <div className="flex items-center gap-2">
+              <span
+                className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 ${
+                  isBothPhotosReady
+                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                    : image1Url || image2Url
+                    ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                    : 'bg-slate-100 text-slate-600 border border-slate-200'
+                }`}
+              >
+                <ImageIcon className="w-3 h-3" />
+                <span>
+                  {image1Url && image2Url
+                    ? '2 / 2 Photos Ready'
+                    : image1Url || image2Url
+                    ? '1 / 2 Photos Uploaded'
+                    : '0 / 2 Photos Uploaded'}
+                </span>
+              </span>
+            </div>
           </div>
 
           <div className="p-3 rounded-2xl bg-blue-50/70 border border-blue-200 text-xs text-blue-800 flex items-start gap-2">
             <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
             <p>
-              Select photos from your Android gallery, file manager, or computer. Both photos are compressed automatically before uploading to Firebase Storage (<code className="font-mono text-[11px] bg-blue-100/80 px-1 py-0.5 rounded">products/{currentSeller.id}/{tempProductId}/...</code>).
+              Select photos from your Android gallery, file manager, or computer. Both photos are compressed automatically on your device to 50–200 KB (&le; 200 KB ceiling) and saved directly to storage (<code className="font-mono text-[11px] bg-blue-100/80 px-1 py-0.5 rounded">products/{currentSeller.id}/{tempProductId}/...</code>).
             </p>
           </div>
 
@@ -306,10 +352,10 @@ export const AddEditProductTab: React.FC = () => {
                 <span>Product Image 1 (Front / Primary)</span>
                 {image1Url ? (
                   <span className="text-[11px] text-emerald-600 font-bold flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Ready
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Ready {image1Size && `(${image1Size})`}
                   </span>
                 ) : (
-                  <span className="text-[11px] text-rose-500 font-semibold">Required</span>
+                  <span className="text-[11px] text-rose-500 font-semibold">Photo 1 Required</span>
                 )}
               </div>
               <PhotoUploader
@@ -317,18 +363,23 @@ export const AddEditProductTab: React.FC = () => {
                 sublabel="Primary catalog view • 50–200 KB"
                 required
                 currentImageUrl={image1Url}
-                onImageUploaded={async (res) => {
+                onImageUploaded={async (res, onProgress) => {
                   const storageResult = await uploadProductImage(
                     currentSeller.id,
                     tempProductId,
                     1,
                     res.blob,
                     res.format,
-                    res.dataUrl
+                    res.dataUrl,
+                    onProgress
                   );
                   setImage1Url(storageResult.downloadUrl);
+                  setImage1Size(formatFileSize(res.sizeBytes));
                 }}
-                onImageRemoved={() => setImage1Url('')}
+                onImageRemoved={() => {
+                  setImage1Url('');
+                  setImage1Size('');
+                }}
                 aspectRatio="standard"
               />
             </div>
@@ -339,10 +390,10 @@ export const AddEditProductTab: React.FC = () => {
                 <span>Product Image 2 (Detail / Side Angle)</span>
                 {image2Url ? (
                   <span className="text-[11px] text-emerald-600 font-bold flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Ready
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Ready {image2Size && `(${image2Size})`}
                   </span>
                 ) : (
-                  <span className="text-[11px] text-rose-500 font-semibold">Required</span>
+                  <span className="text-[11px] text-rose-500 font-semibold">Photo 2 Required</span>
                 )}
               </div>
               <PhotoUploader
@@ -350,18 +401,23 @@ export const AddEditProductTab: React.FC = () => {
                 sublabel="Secondary detail view • 50–200 KB"
                 required
                 currentImageUrl={image2Url}
-                onImageUploaded={async (res) => {
+                onImageUploaded={async (res, onProgress) => {
                   const storageResult = await uploadProductImage(
                     currentSeller.id,
                     tempProductId,
                     2,
                     res.blob,
                     res.format,
-                    res.dataUrl
+                    res.dataUrl,
+                    onProgress
                   );
                   setImage2Url(storageResult.downloadUrl);
+                  setImage2Size(formatFileSize(res.sizeBytes));
                 }}
-                onImageRemoved={() => setImage2Url('')}
+                onImageRemoved={() => {
+                  setImage2Url('');
+                  setImage2Size('');
+                }}
                 aspectRatio="standard"
               />
             </div>
@@ -383,22 +439,38 @@ export const AddEditProductTab: React.FC = () => {
         </div>
 
         {/* Submit Buttons */}
-        <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
-          <button
-            type="button"
-            onClick={() => setSellerDashboardTab('products')}
-            className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={!image1Url || !image2Url}
-            className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer min-h-[42px]"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Publish Product to Supermarket</span>
-          </button>
+        <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="text-xs text-slate-500">
+            {!isBothPhotosReady ? (
+              <span className="text-amber-600 font-medium flex items-center gap-1">
+                <AlertCircle className="w-3.5 h-3.5" />
+                Upload both Product Image 1 and 2 to enable publishing
+              </span>
+            ) : (
+              <span className="text-emerald-600 font-medium flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                Both photos optimized and ready to publish!
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+            <button
+              type="button"
+              onClick={() => setSellerDashboardTab('products')}
+              className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={!isFormValid || isSubmitting}
+              className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer min-h-[42px]"
+            >
+              <Plus className="w-4 h-4" />
+              <span>{isSubmitting ? 'Publishing...' : 'Publish Product to Supermarket'}</span>
+            </button>
+          </div>
         </div>
       </form>
     </div>

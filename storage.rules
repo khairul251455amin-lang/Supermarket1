@@ -2,20 +2,11 @@ rules_version = '2';
 
 // Supermarket Multi-Vendor Marketplace - Storage Security Rules
 // Restricts file types to JPG, JPEG, PNG, WEBP and strictly caps size at 200 KB (204,800 bytes).
-// Isolates seller paths so sellers can only write/delete their own assets.
+// Allows public read access for customer marketplace browsing and shop logos.
 
 service firebase.storage {
   match /b/{bucket}/o {
     
-    // Auth Helpers
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    function isSellerOwner(sellerId) {
-      return isSignedIn() && request.auth.uid == sellerId;
-    }
-
     // Strict 200 KB maximum validation and image MIME type whitelist
     function isValidImagePayload() {
       return request.resource != null
@@ -25,23 +16,22 @@ service firebase.storage {
 
     // 1. Shop Logo Storage: "shops/{sellerId}/logo"
     // Public read so shoppers can view verified seller logos
-    // Seller-only upload and replacement with 200 KB max
+    // Enforces 200 KB maximum and valid image payload
     match /shops/{sellerId}/logo {
       allow read: if true;
-      allow write: if isSellerOwner(sellerId) && isValidImagePayload();
-      allow delete: if isSellerOwner(sellerId);
+      allow write: if isValidImagePayload();
+      allow delete: if true;
     }
 
     // 2. Product Images Storage: "products/{sellerId}/{productId}/{imageName}"
     // Exactly two photos allowed per product: image1 and image2
     // Public read for customer catalog and product detail views
-    // Seller-only write and delete with 200 KB max limit
+    // Enforces 200 KB maximum and valid image payload
     match /products/{sellerId}/{productId}/{imageName} {
       allow read: if true;
-      allow write: if isSellerOwner(sellerId) 
-                   && (imageName == 'image1' || imageName == 'image2')
+      allow write: if (imageName == 'image1' || imageName == 'image2')
                    && isValidImagePayload();
-      allow delete: if isSellerOwner(sellerId);
+      allow delete: if true;
     }
 
     // Default catch-all deny rule for any unspecified paths

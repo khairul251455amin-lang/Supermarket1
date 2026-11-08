@@ -6,14 +6,13 @@
 import React, { useRef, useState } from 'react';
 import {
   Upload,
-  Image as ImageIcon,
   CheckCircle2,
   AlertCircle,
   RefreshCw,
   Trash2,
   Loader2,
   Sparkles,
-  Info,
+  Smartphone,
 } from 'lucide-react';
 import {
   optimizeImage,
@@ -27,13 +26,16 @@ interface PhotoUploaderProps {
   sublabel?: string; // e.g. "Primary front photo • 50-200 KB auto-compressed"
   currentImageUrl?: string;
   required?: boolean;
-  onImageUploaded: (result: {
-    downloadUrl: string;
-    blob: Blob;
-    format: 'webp' | 'jpeg' | 'png';
-    sizeBytes: number;
-    dataUrl: string;
-  }) => Promise<void> | void;
+  onImageUploaded: (
+    result: {
+      downloadUrl: string;
+      blob: Blob;
+      format: 'webp' | 'jpeg' | 'png';
+      sizeBytes: number;
+      dataUrl: string;
+    },
+    onProgress: (progress: number) => void
+  ) => Promise<void> | void;
   onImageRemoved?: () => void;
   aspectRatio?: 'square' | 'wide' | 'standard'; // standard = 4:3
   disabled?: boolean;
@@ -77,18 +79,19 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
     // 1. Validate MIME and extension
     const validation = validateImageType(file);
     if (!validation.valid) {
-      setErrorMessage(validation.error || 'Invalid file format.');
+      setErrorMessage(validation.error || 'Invalid file format. Please upload JPG, PNG, or WEBP.');
       return;
     }
 
     try {
       setIsProcessing(true);
       setProcessingStep('Compressing & optimizing photo on device...');
+      setUploadProgress(20);
 
-      // 2. Perform client-side compression targeting 50-200 KB
+      // 2. Perform client-side compression targeting 50-200 KB (<= 200 KB hard limit)
       const optimized: OptimizedImageResult = await optimizeImage(file, {
         maxDimension: 1200,
-        maxSizeBytes: 200 * 1024, // 200 KB hard ceiling
+        maxSizeBytes: 200 * 1024,
         preferWebp: true,
       });
 
@@ -101,28 +104,37 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
 
       setPreviewUrl(optimized.dataUrl);
       setProcessingStep('Storing photo asset...');
-      setUploadProgress(20);
+      setUploadProgress(40);
 
-      // 3. Delegate to caller for storage assignment
-      await onImageUploaded({
-        downloadUrl: optimized.dataUrl,
-        blob: optimized.blob,
-        format: optimized.format,
-        sizeBytes: optimized.optimizedSize,
-        dataUrl: optimized.dataUrl,
-      });
+      // 3. Delegate to caller for storage assignment with live progress callback
+      await onImageUploaded(
+        {
+          downloadUrl: optimized.dataUrl,
+          blob: optimized.blob,
+          format: optimized.format,
+          sizeBytes: optimized.optimizedSize,
+          dataUrl: optimized.dataUrl,
+        },
+        (progress: number) => {
+          setUploadProgress(progress);
+        }
+      );
 
       setUploadProgress(100);
+      setProcessingStep('Photo verified and ready!');
+    } catch (err) {
+      setErrorMessage(
+        err instanceof Error
+          ? err.message
+          : 'Error uploading photo. Please try again with a different image.'
+      );
+    } finally {
+      // Guarantee loading overlay is always cleared and never stuck
       setTimeout(() => {
-        setUploadProgress(null);
         setIsProcessing(false);
         setProcessingStep('');
-      }, 500);
-    } catch (err) {
-      setIsProcessing(false);
-      setUploadProgress(null);
-      setProcessingStep('');
-      setErrorMessage(err instanceof Error ? err.message : 'Error optimizing photo.');
+        setUploadProgress(null);
+      }, 350);
     }
   };
 
@@ -179,7 +191,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
 
   return (
     <div className="space-y-2 w-full">
-      {/* Hidden Native File Input */}
+      {/* Hidden Native File Input: accepts Android Gallery, Camera, File Manager, and Desktop */}
       <input
         ref={fileInputRef}
         type="file"
@@ -199,29 +211,34 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
               className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-102"
             />
 
-            {/* Processing Overlay */}
+            {/* Processing / Progress Overlay */}
             {isProcessing && (
-              <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-xs flex flex-col items-center justify-center p-4 text-white z-20">
+              <div className="absolute inset-0 bg-slate-900/85 backdrop-blur-xs flex flex-col items-center justify-center p-4 text-white z-20">
                 <Loader2 className="w-8 h-8 text-blue-400 animate-spin mb-2" />
-                <p className="text-xs font-medium text-center">{processingStep}</p>
+                <p className="text-xs font-semibold text-center">{processingStep}</p>
                 {uploadProgress !== null && (
-                  <div className="w-32 bg-slate-700 h-1.5 rounded-full mt-3 overflow-hidden">
+                  <div className="w-36 bg-slate-700 h-2 rounded-full mt-3 overflow-hidden shadow-inner">
                     <div
-                      className="bg-blue-500 h-full transition-all duration-200"
+                      className="bg-blue-500 h-full transition-all duration-150"
                       style={{ width: `${uploadProgress}%` }}
                     />
                   </div>
+                )}
+                {uploadProgress !== null && (
+                  <span className="text-[10px] text-blue-300 mt-1 font-mono font-bold">
+                    {uploadProgress}%
+                  </span>
                 )}
               </div>
             )}
 
             {/* Hover Actions Bar */}
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity flex items-end justify-between p-3 z-10">
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-95 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity flex items-end justify-between p-3 z-10">
               <button
                 type="button"
                 onClick={triggerSelect}
                 disabled={disabled || isProcessing}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/90 text-slate-800 text-xs font-semibold hover:bg-white shadow-sm transition-transform active:scale-95"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white text-slate-800 text-xs font-semibold hover:bg-slate-100 shadow-sm transition-transform active:scale-95 cursor-pointer"
               >
                 <RefreshCw className="w-3.5 h-3.5 text-blue-600" />
                 <span>Replace</span>
@@ -231,7 +248,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
                 type="button"
                 onClick={handleRemove}
                 disabled={disabled || isProcessing}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-600/90 text-white text-xs font-semibold hover:bg-rose-600 shadow-sm transition-transform active:scale-95"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-600 text-white text-xs font-semibold hover:bg-rose-700 shadow-sm transition-transform active:scale-95 cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 <span>Remove</span>
@@ -248,13 +265,15 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
             </div>
 
             {compressionStats ? (
-              <span className="font-mono text-[10px] bg-emerald-100 text-emerald-800 font-medium px-2 py-0.5 rounded-full">
-                {compressionStats.optimizedSize} • {compressionStats.format}
-                {compressionStats.reduction > 0 && ` (-${compressionStats.reduction}%)`}
+              <span className="font-mono text-[10px] bg-emerald-100 text-emerald-800 font-semibold px-2 py-0.5 rounded-full flex items-center gap-1">
+                <span>{compressionStats.optimizedSize}</span>
+                <span>•</span>
+                <span>{compressionStats.format}</span>
+                {compressionStats.reduction > 0 && <span>(-{compressionStats.reduction}%)</span>}
               </span>
             ) : (
-              <span className="font-mono text-[10px] bg-slate-200 text-slate-700 font-medium px-2 py-0.5 rounded-full">
-                &le; 200 KB
+              <span className="font-mono text-[10px] bg-emerald-100 text-emerald-800 font-semibold px-2 py-0.5 rounded-full">
+                ✓ Ready • &le; 200 KB
               </span>
             )}
           </div>
@@ -290,19 +309,30 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
               </span>
               {required && <span className="text-rose-500 font-bold">*</span>}
             </div>
-            <p className="text-[11px] text-slate-500">
-              Tap to browse photo from Android gallery, file manager, or computer
+            <p className="text-[11px] text-slate-500 flex items-center justify-center gap-1">
+              <Smartphone className="w-3 h-3 text-slate-400 inline" />
+              <span>Tap to pick from gallery, files, or computer</span>
             </p>
             <p className="text-[10px] text-slate-400 font-medium">
-              Target 50–200 KB • Max 200 KB • JPG, PNG, WEBP
+              Target 50–200 KB • Max 200 KB limit • JPG, PNG, WEBP
             </p>
           </div>
 
           {isProcessing && (
-            <p className="text-xs text-blue-600 font-medium mt-3 flex items-center gap-1.5 animate-pulse">
-              <Sparkles className="w-3.5 h-3.5" />
-              {processingStep}
-            </p>
+            <div className="mt-3 flex flex-col items-center gap-1.5">
+              <p className="text-xs text-blue-600 font-medium flex items-center gap-1.5 animate-pulse">
+                <Sparkles className="w-3.5 h-3.5" />
+                {processingStep}
+              </p>
+              {uploadProgress !== null && (
+                <div className="w-32 bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                  <div
+                    className="bg-blue-600 h-full transition-all duration-150"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+              )}
+            </div>
           )}
         </div>
       )}

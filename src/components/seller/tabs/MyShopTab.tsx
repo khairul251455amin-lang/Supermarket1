@@ -280,12 +280,13 @@ export const MyShopTab: React.FC = () => {
                 label="Upload Shop Logo"
                 sublabel="Select from Android gallery or computer • Auto-compressed 50–200 KB"
                 currentImageUrl={shopLogo}
-                onImageUploaded={async (res) => {
+                onImageUploaded={async (res, onProgress) => {
                   const uploadResult = await uploadShopLogo(
                     currentSeller.id,
                     res.blob,
                     res.format,
-                    res.dataUrl
+                    res.dataUrl,
+                    onProgress
                   );
                   setShopLogo(uploadResult.downloadUrl);
                 }}
