@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { MarketplaceProvider, useMarketplace } from './context/MarketplaceContext';
+import { AnnouncementBar } from './components/layout/AnnouncementBar';
 import { Navbar } from './components/layout/Navbar';
 import { BottomNav } from './components/layout/BottomNav';
 import { Footer } from './components/layout/Footer';
@@ -24,6 +25,7 @@ import { AuthView } from './components/views/AuthView';
 import { PublicShopView } from './components/views/PublicShopView';
 import { SellerRegistrationView } from './components/seller/SellerRegistrationView';
 import { SellerDashboard } from './components/seller/SellerDashboard';
+import { AuthRequiredModal } from './components/modals/AuthRequiredModal';
 
 const MainRouter: React.FC = () => {
   const { currentView } = useMarketplace();
@@ -68,13 +70,15 @@ const MainRouter: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900">
+    <div className="min-h-screen flex flex-col bg-[#F8FAFC] text-[#0F172A]">
+      <AnnouncementBar />
       <Navbar />
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-20 md:pb-10">
         {renderCurrentView()}
       </main>
       <Footer />
       <BottomNav />
+      <AuthRequiredModal />
     </div>
   );
 };

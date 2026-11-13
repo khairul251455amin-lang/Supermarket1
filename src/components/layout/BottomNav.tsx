@@ -4,15 +4,25 @@
  */
 
 import React from 'react';
-import { Home, Search, Heart, ShoppingCart, MessageSquare, User, Store, LayoutDashboard } from 'lucide-react';
+import {
+  Home,
+  Compass,
+  ShoppingCart,
+  MessageSquare,
+  User,
+  Store,
+  LayoutDashboard,
+  Package,
+  ClipboardList,
+} from 'lucide-react';
 import { useMarketplace } from '../../context/MarketplaceContext';
 
 export const BottomNav: React.FC = () => {
   const {
     currentView,
+    sellerDashboardTab,
     navigateTo,
     cartCount,
-    favourites,
     unreadMessagesCount,
     unreadSellerMessagesCount,
     unreadSellerNotificationsCount,
@@ -20,45 +30,60 @@ export const BottomNav: React.FC = () => {
     currentSeller,
   } = useMarketplace();
 
-  // If in seller dashboard, show seller mobile controls
+  // Seller Dashboard mobile navigation
   if (currentView === 'seller-dashboard') {
     return (
       <nav
         aria-label="Seller Mobile Navigation"
-        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 text-slate-400 px-2 py-1 safe-area-pb"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0F172A]/95 backdrop-blur-md border-t border-slate-800 text-slate-400 px-2 safe-area-pb"
       >
         <div className="grid grid-cols-5 items-center h-14">
           <button
+            type="button"
             onClick={() => navigateTo('home')}
-            className="flex flex-col items-center justify-center min-h-[44px] min-w-[44px] hover:text-white"
+            className="flex flex-col items-center justify-center min-h-[44px] min-w-[44px] hover:text-white cursor-pointer"
           >
             <Home className="w-5 h-5" />
-            <span className="text-[10px] mt-1">Customer Web</span>
+            <span className="text-[10px] mt-1 font-medium">Shop Web</span>
           </button>
           <button
+            type="button"
             onClick={() => navigateTo('seller-dashboard', { sellerTab: 'overview' })}
-            className="flex flex-col items-center justify-center min-h-[44px] min-w-[44px] text-blue-400 font-semibold"
+            className={`flex flex-col items-center justify-center min-h-[44px] min-w-[44px] cursor-pointer ${
+              sellerDashboardTab === 'overview' ? 'text-blue-400 font-semibold' : 'hover:text-white'
+            }`}
           >
             <LayoutDashboard className="w-5 h-5" />
             <span className="text-[10px] mt-1">Overview</span>
           </button>
           <button
+            type="button"
             onClick={() => navigateTo('seller-dashboard', { sellerTab: 'products' })}
-            className="flex flex-col items-center justify-center min-h-[44px] min-w-[44px] hover:text-white"
+            className={`flex flex-col items-center justify-center min-h-[44px] min-w-[44px] cursor-pointer ${
+              sellerDashboardTab === 'products' || sellerDashboardTab === 'add-product'
+                ? 'text-blue-400 font-semibold'
+                : 'hover:text-white'
+            }`}
           >
-            <Store className="w-5 h-5" />
+            <Package className="w-5 h-5" />
             <span className="text-[10px] mt-1">Products</span>
           </button>
           <button
+            type="button"
             onClick={() => navigateTo('seller-dashboard', { sellerTab: 'orders' })}
-            className="flex flex-col items-center justify-center min-h-[44px] min-w-[44px] hover:text-white relative"
+            className={`flex flex-col items-center justify-center min-h-[44px] min-w-[44px] cursor-pointer ${
+              sellerDashboardTab === 'orders' ? 'text-blue-400 font-semibold' : 'hover:text-white'
+            }`}
           >
-            <ShoppingCart className="w-5 h-5" />
+            <ClipboardList className="w-5 h-5" />
             <span className="text-[10px] mt-1">Orders</span>
           </button>
           <button
+            type="button"
             onClick={() => navigateTo('seller-dashboard', { sellerTab: 'settings' })}
-            className="flex flex-col items-center justify-center min-h-[44px] min-w-[44px] hover:text-white"
+            className={`flex flex-col items-center justify-center min-h-[44px] min-w-[44px] cursor-pointer ${
+              sellerDashboardTab === 'settings' ? 'text-blue-400 font-semibold' : 'hover:text-white'
+            }`}
           >
             <User className="w-5 h-5" />
             <span className="text-[10px] mt-1">Settings</span>
@@ -77,15 +102,9 @@ export const BottomNav: React.FC = () => {
     },
     {
       view: 'search' as const,
-      label: 'Search',
-      icon: Search,
+      label: 'Explore',
+      icon: Compass,
       badge: 0,
-    },
-    {
-      view: 'favourites' as const,
-      label: 'Saved',
-      icon: Heart,
-      badge: favourites.length,
     },
     {
       view: 'cart' as const,
@@ -94,8 +113,14 @@ export const BottomNav: React.FC = () => {
       badge: cartCount,
     },
     {
+      view: 'messages' as const,
+      label: 'Messages',
+      icon: MessageSquare,
+      badge: unreadMessagesCount,
+    },
+    {
       view: currentSeller ? ('seller-dashboard' as const) : user ? ('profile' as const) : ('welcome' as const),
-      label: currentSeller ? 'Seller' : user ? 'Profile' : 'Sign In',
+      label: 'Account',
       icon: currentSeller ? Store : User,
       badge: currentSeller ? unreadSellerNotificationsCount + unreadSellerMessagesCount : 0,
     },
@@ -104,19 +129,21 @@ export const BottomNav: React.FC = () => {
   return (
     <nav
       aria-label="Mobile Navigation"
-      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/90 shadow-lg px-2 py-1 safe-area-pb"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-[#E2E8F0] px-2 safe-area-pb"
     >
       <div className="grid grid-cols-5 items-center h-14">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive =
             currentView === item.view ||
+            (item.view === 'search' && currentView === 'category') ||
             (item.view === 'welcome' && (currentView === 'welcome' || currentView === 'auth')) ||
-            (item.view === 'profile' && currentView === 'profile');
+            (item.view === 'profile' && (currentView === 'profile' || currentView === 'orders'));
 
           return (
             <button
               key={item.label}
+              type="button"
               onClick={() => {
                 if (item.view === 'welcome') {
                   navigateTo('welcome', { welcomeStep: 'purpose' });
@@ -124,18 +151,18 @@ export const BottomNav: React.FC = () => {
                   navigateTo(item.view);
                 }
               }}
-              className={`relative flex flex-col items-center justify-center h-full min-h-[44px] min-w-[44px] py-1 transition-colors ${
-                isActive ? 'text-blue-600 font-semibold' : 'text-slate-500 hover:text-slate-800'
+              className={`relative flex flex-col items-center justify-center h-full min-h-[44px] min-w-[44px] py-1 transition-colors cursor-pointer ${
+                isActive ? 'text-[#2563EB] font-semibold' : 'text-[#64748B] hover:text-[#0F172A]'
               }`}
             >
               <div className="relative">
                 <Icon
                   className={`w-5 h-5 transition-transform ${
-                    isActive ? 'scale-110 stroke-[2.3]' : 'stroke-[1.8]'
+                    isActive ? 'scale-105 stroke-[2.25]' : 'stroke-[1.75]'
                   }`}
                 />
                 {item.badge > 0 && (
-                  <span className="absolute -top-1.5 -right-2 min-w-4 h-4 px-1 rounded-full bg-blue-600 text-white text-[9px] font-bold flex items-center justify-center tabular-nums">
+                  <span className="absolute -top-1.5 -right-2 min-w-4 h-4 px-1 rounded-full bg-[#2563EB] text-white text-[9px] font-bold flex items-center justify-center tabular-nums">
                     {item.badge > 99 ? '99+' : item.badge}
                   </span>
                 )}

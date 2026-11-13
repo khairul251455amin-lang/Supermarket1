@@ -12,27 +12,31 @@ import {
   ShieldCheck,
   AlertCircle,
   Truck,
+  Package,
 } from 'lucide-react';
 import { useMarketplace } from '../../context/MarketplaceContext';
+import { formatPrice, marketplaceConfig } from '../../config/marketplaceConfig';
 import { EmptyState } from '../common/EmptyState';
 
 export const CartView: React.FC = () => {
   const {
     cart,
+    user,
     updateCartQuantity,
     removeFromCart,
     clearCart,
     cartSubtotal,
     navigateTo,
+    openAuthGate,
   } = useMarketplace();
 
-  // Group cart items by seller ID (Feature 7: Handle products from multiple sellers)
+  // Group cart items by seller ID
   const itemsBySeller = cart.reduce((acc, item) => {
-    const sellerKey = item.product.sellerId || 'unknown-seller';
+    const sellerKey = item.product.shopId || item.product.sellerId || 'unknown-seller';
     if (!acc[sellerKey]) {
       acc[sellerKey] = {
-        sellerId: item.product.sellerId,
-        sellerName: item.product.sellerName,
+        sellerId: sellerKey,
+        sellerName: item.product.shopName || item.product.sellerName,
         items: [],
       };
     }
@@ -40,7 +44,9 @@ export const CartView: React.FC = () => {
     return acc;
   }, {} as Record<string, { sellerId: string; sellerName: string; items: typeof cart }>);
 
-  const deliveryFee = cartSubtotal > 50 ? 0 : 5;
+  const freeThreshold = marketplaceConfig.delivery.freeShippingThreshold;
+  const standardFee = marketplaceConfig.delivery.standardFee;
+  const deliveryFee = cartSubtotal > freeThreshold ? 0 : standardFee;
   const grandTotal = cartSubtotal + (cart.length > 0 ? deliveryFee : 0);
 
   if (cart.length === 0) {
@@ -55,14 +61,22 @@ export const CartView: React.FC = () => {
     );
   }
 
+  const handleCheckout = () => {
+    if (!user) {
+      openAuthGate('Please sign in or create an account to complete checkout.');
+      return;
+    }
+    navigateTo('checkout');
+  };
+
   return (
     <div className="space-y-8 pb-12 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between pb-4 border-b border-slate-200">
+      <div className="flex items-center justify-between pb-4 border-b border-[#E2E8F0]">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0F172A]">
             Shopping Cart
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500">
+          <p className="text-xs sm:text-sm text-[#64748B]">
             Review items grouped across {Object.keys(itemsBySeller).length}{' '}
             {Object.keys(itemsBySeller).length === 1 ? 'seller shop' : 'seller shops'}
           </p>
@@ -88,21 +102,25 @@ export const CartView: React.FC = () => {
             return (
               <div
                 key={sellerGroup.sellerId}
-                className="bg-white rounded-3xl border border-slate-200/90 shadow-xs overflow-hidden"
+                className="bg-white rounded-2xl border border-[#E2E8F0] shadow-xs overflow-hidden"
               >
                 {/* Seller Group Header */}
-                <div className="px-5 py-3.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Store className="w-4 h-4 text-blue-600" />
-                    <span className="text-xs font-bold text-slate-900">
-                      Seller: {sellerGroup.sellerName}
+                <div className="px-5 py-3.5 bg-[#F8FAFC] border-b border-[#E2E8F0] flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={() => navigateTo('shop', { sellerId: sellerGroup.sellerId })}
+                    className="flex items-center gap-2 hover:text-[#2563EB] transition-colors cursor-pointer min-w-0"
+                  >
+                    <Store className="w-4 h-4 text-[#2563EB] shrink-0" />
+                    <span className="text-xs font-bold text-[#0F172A] truncate">
+                      {sellerGroup.sellerName}
                     </span>
-                    <span className="text-[11px] font-mono text-slate-400">
-                      ID: {sellerGroup.sellerId}
+                    <span className="text-[11px] font-mono text-[#64748B] hidden sm:inline">
+                      ({sellerGroup.sellerId})
                     </span>
-                  </div>
-                  <span className="text-xs font-semibold text-slate-600 tabular-nums">
-                    Package Subtotal: ${sellerSubtotal.toFixed(2)}
+                  </button>
+                  <span className="text-xs font-semibold text-[#64748B] tabular-nums shrink-0">
+                    Package Subtotal: {formatPrice(sellerSubtotal)}
                   </span>
                 </div>
 
@@ -110,7 +128,8 @@ export const CartView: React.FC = () => {
                 <div className="divide-y divide-slate-100 p-2 sm:p-4">
                   {sellerGroup.items.map((item) => {
                     const price = item.product.discountedPrice ?? item.product.originalPrice;
-                    const isMaxStock = item.quantity >= item.product.stock;
+                    const availableStock = item.product.stockQuantity ?? item.product.stock;
+                    const isMaxStock = item.quantity >= availableStock;
 
                     return (
                       <div
@@ -119,15 +138,17 @@ export const CartView: React.FC = () => {
                       >
                         {/* Thumbnail & Title */}
                         <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <img
-                            src={
-                              item.product.images[0] ||
-                              'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=200&q=80'
-                            }
-                            alt={item.product.name}
-                            referrerPolicy="no-referrer"
-                            className="w-16 h-16 rounded-xl object-cover bg-slate-100 shrink-0"
-                          />
+                          {item.product.images[0] ? (
+                            <img
+                              src={item.product.images[0]}
+                              alt={item.product.name}
+                              className="w-16 h-16 rounded-xl object-cover bg-slate-100 shrink-0"
+                            />
+                          ) : (
+                            <div className="w-16 h-16 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 shrink-0">
+                              <Package className="w-6 h-6" />
+                            </div>
+                          )}
                           <div className="min-w-0">
                             <h4
                               onClick={() => navigateTo('product', { productId: item.productId })}
@@ -136,13 +157,13 @@ export const CartView: React.FC = () => {
                               {item.product.name}
                             </h4>
                             <div className="text-xs text-slate-500 mt-0.5">
-                              ${price.toFixed(2)} each ·{' '}
+                              {formatPrice(price)} each ·{' '}
                               <span
                                 className={`font-medium ${
                                   isMaxStock ? 'text-amber-600 font-semibold' : 'text-slate-400'
                                 }`}
                               >
-                                {item.product.stock} in stock
+                                {availableStock} in stock
                               </span>
                             </div>
                             {isMaxStock && (
@@ -161,7 +182,7 @@ export const CartView: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => updateCartQuantity(item.productId, item.quantity - 1)}
-                              className="w-8 h-8 flex items-center justify-center text-slate-600 hover:bg-slate-200 transition-colors text-sm font-bold"
+                              className="w-8 h-8 flex items-center justify-center text-slate-600 hover:bg-slate-200 transition-colors text-sm font-bold cursor-pointer"
                             >
                               -
                             </button>
@@ -172,7 +193,7 @@ export const CartView: React.FC = () => {
                               type="button"
                               disabled={isMaxStock}
                               onClick={() => updateCartQuantity(item.productId, item.quantity + 1)}
-                              className="w-8 h-8 flex items-center justify-center text-slate-600 hover:bg-slate-200 transition-colors text-sm font-bold disabled:opacity-30 disabled:cursor-not-allowed"
+                              className="w-8 h-8 flex items-center justify-center text-slate-600 hover:bg-slate-200 transition-colors text-sm font-bold disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                             >
                               +
                             </button>
@@ -181,7 +202,7 @@ export const CartView: React.FC = () => {
                           {/* Line Total */}
                           <div className="text-right min-w-[70px]">
                             <div className="text-sm font-bold text-slate-900 tabular-nums">
-                              ${(price * item.quantity).toFixed(2)}
+                              {formatPrice(price * item.quantity)}
                             </div>
                           </div>
 
@@ -189,7 +210,7 @@ export const CartView: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => removeFromCart(item.productId)}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -204,57 +225,57 @@ export const CartView: React.FC = () => {
         </div>
 
         {/* Right Column: Order Summary Card */}
-        <div className="lg:col-span-4 bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-xs space-y-6 sticky top-24">
-          <h3 className="text-base font-bold text-slate-900">Order Summary</h3>
+        <div className="lg:col-span-4 bg-white rounded-2xl p-6 sm:p-7 border border-[#E2E8F0] shadow-xs space-y-6 sticky top-20">
+          <h3 className="text-base font-bold text-[#0F172A]">Order Summary</h3>
 
-          <div className="space-y-3 text-xs text-slate-600">
+          <div className="space-y-3 text-xs text-[#64748B]">
             <div className="flex items-center justify-between">
               <span>Subtotal ({cart.length} items)</span>
-              <span className="font-semibold text-slate-900 tabular-nums">
-                ${cartSubtotal.toFixed(2)}
+              <span className="font-semibold text-[#0F172A] tabular-nums">
+                {formatPrice(cartSubtotal)}
               </span>
             </div>
 
             <div className="flex items-center justify-between">
               <span>Estimated Delivery</span>
-              <span className="font-semibold text-slate-900 tabular-nums">
+              <span className="font-semibold text-[#0F172A] tabular-nums">
                 {deliveryFee === 0 ? (
                   <span className="text-emerald-600 font-bold uppercase text-[11px]">Free</span>
                 ) : (
-                  `$${deliveryFee.toFixed(2)}`
+                  formatPrice(deliveryFee)
                 )}
               </span>
             </div>
 
             {deliveryFee > 0 && (
-              <p className="text-[11px] text-slate-400">
-                Add ${(50 - cartSubtotal).toFixed(2)} more to qualify for Free Delivery!
+              <p className="text-[11px] text-[#64748B]">
+                Add {formatPrice(freeThreshold - cartSubtotal)} more to qualify for Free Delivery!
               </p>
             )}
 
-            <div className="pt-3 border-t border-slate-100 flex items-baseline justify-between">
-              <span className="text-sm font-bold text-slate-900">Total</span>
-              <span className="text-2xl font-extrabold text-blue-600 tabular-nums">
-                ${grandTotal.toFixed(2)}
+            <div className="pt-3 border-t border-[#E2E8F0] flex items-baseline justify-between">
+              <span className="text-sm font-bold text-[#0F172A]">Total</span>
+              <span className="text-2xl font-extrabold text-[#2563EB] tabular-nums">
+                {formatPrice(grandTotal)}
               </span>
             </div>
           </div>
 
-          <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/70 text-xs text-slate-600 flex items-center gap-2.5">
+          <div className="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs text-[#64748B] flex items-center gap-2.5">
             <Truck className="w-4 h-4 text-emerald-600 shrink-0" />
             <span>Eligible for Cash on Delivery payment at door</span>
           </div>
 
           <button
-            onClick={() => navigateTo('checkout')}
-            className="w-full py-3.5 px-4 rounded-xl font-semibold text-sm bg-blue-600 hover:bg-blue-700 text-white shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98 min-h-[46px]"
+            onClick={handleCheckout}
+            className="w-full py-3.5 px-4 rounded-xl font-semibold text-sm bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98 min-h-[46px]"
           >
             <span>Proceed to Checkout</span>
             <ArrowRight className="w-4 h-4" />
           </button>
 
-          <div className="flex items-center justify-center gap-2 text-xs text-slate-400">
-            <ShieldCheck className="w-4 h-4 text-slate-400" />
+          <div className="flex items-center justify-center gap-2 text-xs text-[#64748B]">
+            <ShieldCheck className="w-4 h-4 text-[#64748B]" />
             <span>Safe and verified checkout</span>
           </div>
         </div>

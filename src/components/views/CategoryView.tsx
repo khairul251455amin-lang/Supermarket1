@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { ArrowLeft, Sparkles } from 'lucide-react';
+import { ArrowLeft, RefreshCw, AlertCircle } from 'lucide-react';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { CategoryIcon } from '../common/CategoryIcon';
 import { ProductCard } from '../common/ProductCard';
@@ -15,8 +15,10 @@ export const CategoryView: React.FC = () => {
     selectedCategorySlug,
     categories,
     products,
+    productsLoading,
+    productsError,
+    retryProductsSubscription,
     navigateTo,
-    setIsSandboxModalOpen,
   } = useMarketplace();
 
   const currentCategory =
@@ -28,7 +30,6 @@ export const CategoryView: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-8">
-      {/* Back and Breadcrumb */}
       <div className="flex items-center justify-between">
         <button
           onClick={() => navigateTo('home')}
@@ -40,34 +41,34 @@ export const CategoryView: React.FC = () => {
       </div>
 
       {/* Category Banner */}
-      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="bg-white rounded-2xl p-6 sm:p-7 border border-[#E2E8F0] shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 shadow-xs">
-            <CategoryIcon name={currentCategory.name} className="w-8 h-8" />
+          <div className="w-14 h-14 rounded-2xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center shrink-0 border border-blue-100">
+            <CategoryIcon name={currentCategory.name} className="w-7 h-7" />
           </div>
           <div>
-            <div className="text-xs font-semibold uppercase tracking-wider text-blue-600 mb-0.5">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-[#2563EB] mb-0.5">
               Department
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#0F172A] tracking-tight">
               {currentCategory.name}
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-xl">
+            <p className="text-xs sm:text-sm text-[#64748B] mt-1 max-w-xl">
               {currentCategory.description}
             </p>
           </div>
         </div>
 
-        <div className="text-right self-stretch sm:self-auto pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-100 flex items-center sm:flex-col justify-between">
-          <span className="text-xs text-slate-400">Inventory Status</span>
-          <span className="text-sm font-bold text-slate-900 tabular-nums">
+        <div className="text-right self-stretch sm:self-auto pt-3 sm:pt-0 border-t sm:border-t-0 border-[#E2E8F0] flex items-center sm:flex-col justify-between">
+          <span className="text-xs text-[#64748B]">Available Items</span>
+          <span className="text-sm font-bold text-[#0F172A] tabular-nums">
             {categoryProducts.length}{' '}
             {categoryProducts.length === 1 ? 'listed item' : 'listed items'}
           </span>
         </div>
       </div>
 
-      {/* Category Horizontal Quick Switcher */}
+      {/* Category Quick Switcher */}
       <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
         {categories.map((cat) => {
           const isCurrent = cat.slug === currentCategory.slug;
@@ -77,8 +78,8 @@ export const CategoryView: React.FC = () => {
               onClick={() => navigateTo('category', { categorySlug: cat.slug })}
               className={`shrink-0 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer ${
                 isCurrent
-                  ? 'bg-blue-600 text-white shadow-xs'
-                  : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200/80'
+                  ? 'bg-[#2563EB] text-white shadow-xs'
+                  : 'bg-white hover:bg-[#EFF6FF] text-[#0F172A] border border-[#E2E8F0]'
               }`}
             >
               <CategoryIcon name={cat.name} className="w-3.5 h-3.5" />
@@ -88,8 +89,35 @@ export const CategoryView: React.FC = () => {
         })}
       </div>
 
-      {/* Category Product Grid */}
-      {categoryProducts.length > 0 ? (
+      {productsError && (
+        <div className="rounded-2xl bg-rose-50 border border-rose-200 p-4 flex items-center justify-between text-xs text-rose-800">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            <span>{productsError}</span>
+          </div>
+          <button
+            onClick={retryProductsSubscription}
+            className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-rose-600 text-white font-semibold cursor-pointer"
+          >
+            <RefreshCw className="w-3 h-3" />
+            <span>Retry</span>
+          </button>
+        </div>
+      )}
+
+      {productsLoading ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden animate-pulse">
+              <div className="aspect-4/3 bg-slate-200" />
+              <div className="p-4 space-y-2">
+                <div className="h-3 w-1/2 bg-slate-200 rounded" />
+                <div className="h-4 w-3/4 bg-slate-200 rounded" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : categoryProducts.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           {categoryProducts.map((product) => (
             <ProductCard key={product.id} product={product} />
@@ -99,11 +127,11 @@ export const CategoryView: React.FC = () => {
         <EmptyState
           icon={() => <CategoryIcon name={currentCategory.name} className="w-7 h-7" />}
           title={`No Products in ${currentCategory.name} Yet`}
-          description={`Verified sellers haven't listed items under the ${currentCategory.name} category yet. All marketplace departments start empty until real inventory is added.`}
-          actionLabel={`Add Product to ${currentCategory.name}`}
-          onAction={() => setIsSandboxModalOpen(true)}
-          secondaryLabel="Browse All Categories"
-          onSecondaryAction={() => navigateTo('home')}
+          description={`Sellers haven't published items under ${currentCategory.name} yet.`}
+          actionLabel="Browse All Categories"
+          onAction={() => navigateTo('home')}
+          secondaryLabel="Search Marketplace"
+          onSecondaryAction={() => navigateTo('search')}
         />
       )}
     </div>

@@ -9,33 +9,37 @@ import {
   ShoppingBag,
   Clock,
   CheckCircle2,
-  XCircle,
   DollarSign,
   AlertTriangle,
   ArrowRight,
   Plus,
-  Store,
 } from 'lucide-react';
 import { useMarketplace } from '../../../context/MarketplaceContext';
+import { formatPrice } from '../../../config/marketplaceConfig';
 import { EmptyState } from '../../common/EmptyState';
 
 export const OverviewTab: React.FC = () => {
   const {
     currentSeller,
-    products,
+    sellerProducts,
     sellerOrders,
     setSellerDashboardTab,
+    setEditingProductId,
   } = useMarketplace();
 
   if (!currentSeller) return null;
 
-  // Filter real products belonging to this seller
-  const sellerProducts = products.filter((p) => p.sellerId === currentSeller.id);
+  // Real seller inventory counts across published, draft, paused, and out-of-stock
   const activeProducts = sellerProducts.filter(
-    (p) => (p.isAvailable ?? true) && !p.isRemovedByModeration && p.stock > 0
+    (p) => p.status === 'published' && (p.stockQuantity ?? p.stock) > 0
   );
-  const outOfStockProducts = sellerProducts.filter((p) => p.stock <= 0);
-  const lowStockProducts = sellerProducts.filter((p) => p.stock > 0 && p.stock <= 5);
+  const outOfStockProducts = sellerProducts.filter(
+    (p) => p.status === 'out_of_stock' || (p.stockQuantity ?? p.stock) <= 0
+  );
+  const lowStockProducts = sellerProducts.filter((p) => {
+    const qty = p.stockQuantity ?? p.stock;
+    return qty > 0 && qty <= 5;
+  });
 
   // Filter real fulfilment orders belonging to this seller
   const orders = sellerOrders.filter((o) => o.sellerId === currentSeller.id);
@@ -51,10 +55,10 @@ export const OverviewTab: React.FC = () => {
   return (
     <div className="space-y-8">
       {/* Welcome & Shop Status Header */}
-      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-white rounded-2xl p-6 sm:p-7 border border-[#E2E8F0] shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs font-semibold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-md font-mono">
+            <span className="text-xs font-semibold text-[#1D4ED8] bg-[#EFF6FF] px-2.5 py-0.5 rounded-md font-mono">
               ID: {currentSeller.id}
             </span>
             <span
@@ -67,18 +71,21 @@ export const OverviewTab: React.FC = () => {
               Shop is {currentSeller.isOpen ? 'Open & Active' : 'Temporarily Closed'}
             </span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0F172A] tracking-tight">
             Welcome, {currentSeller.shopName}
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+          <p className="text-xs sm:text-sm text-[#64748B] mt-1">
             Real-time multi-vendor performance analytics and inventory tracking
           </p>
         </div>
 
         <div className="flex items-center gap-2.5 shrink-0">
           <button
-            onClick={() => setSellerDashboardTab('add-product')}
-            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-xs transition-colors cursor-pointer min-h-[42px]"
+            onClick={() => {
+              setEditingProductId(null);
+              setSellerDashboardTab('add-product');
+            }}
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-semibold text-xs shadow-xs transition-colors cursor-pointer min-h-[42px]"
           >
             <Plus className="w-4 h-4" />
             <span>Add Product</span>
@@ -89,57 +96,57 @@ export const OverviewTab: React.FC = () => {
       {/* Real Statistics Metric Strip */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Products */}
-        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs space-y-2">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
+        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-[#E2E8F0] shadow-xs space-y-2">
+          <div className="flex items-center justify-between text-[#64748B] text-xs font-medium">
             <span>Total Products</span>
-            <Package className="w-4 h-4 text-blue-600" />
+            <Package className="w-4 h-4 text-[#2563EB]" />
           </div>
-          <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 tabular-nums">
+          <div className="text-2xl sm:text-3xl font-extrabold text-[#0F172A] tabular-nums">
             {sellerProducts.length}
           </div>
-          <div className="text-[11px] text-slate-400">
+          <div className="text-[11px] text-[#64748B] tabular-nums">
             {activeProducts.length} active · {outOfStockProducts.length} out of stock
           </div>
         </div>
 
         {/* Pending Orders */}
-        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs space-y-2">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
+        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-[#E2E8F0] shadow-xs space-y-2">
+          <div className="flex items-center justify-between text-[#64748B] text-xs font-medium">
             <span>Pending Orders</span>
             <Clock className="w-4 h-4 text-amber-600" />
           </div>
           <div className="text-2xl sm:text-3xl font-extrabold text-amber-600 tabular-nums">
             {pendingOrders.length}
           </div>
-          <div className="text-[11px] text-slate-400">
+          <div className="text-[11px] text-[#64748B]">
             Awaiting your confirmation
           </div>
         </div>
 
         {/* Completed Orders */}
-        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs space-y-2">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
+        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-[#E2E8F0] shadow-xs space-y-2">
+          <div className="flex items-center justify-between text-[#64748B] text-xs font-medium">
             <span>Completed Orders</span>
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
           </div>
-          <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 tabular-nums">
+          <div className="text-2xl sm:text-3xl font-extrabold text-[#0F172A] tabular-nums">
             {completedOrders.length}
           </div>
-          <div className="text-[11px] text-slate-400">
+          <div className="text-[11px] text-[#64748B] tabular-nums">
             {cancelledOrders.length} cancelled
           </div>
         </div>
 
         {/* Completed Sales */}
-        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs space-y-2">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
+        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-[#E2E8F0] shadow-xs space-y-2">
+          <div className="flex items-center justify-between text-[#64748B] text-xs font-medium">
             <span>Completed Sales</span>
             <DollarSign className="w-4 h-4 text-emerald-600" />
           </div>
-          <div className="text-2xl sm:text-3xl font-extrabold text-blue-600 tabular-nums">
-            ${totalSalesFromCompleted.toFixed(2)}
+          <div className="text-2xl sm:text-3xl font-extrabold text-[#2563EB] tabular-nums">
+            {formatPrice(totalSalesFromCompleted)}
           </div>
-          <div className="text-[11px] text-slate-400">
+          <div className="text-[11px] text-[#64748B]">
             From verified delivered packages
           </div>
         </div>
@@ -147,7 +154,7 @@ export const OverviewTab: React.FC = () => {
 
       {/* Low-Stock Alerts Section */}
       {lowStockProducts.length > 0 && (
-        <div className="bg-amber-50/70 border border-amber-200 rounded-3xl p-6 space-y-3">
+        <div className="bg-amber-50/70 border border-amber-200 rounded-2xl p-5 sm:p-6 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-amber-600" />
@@ -157,7 +164,7 @@ export const OverviewTab: React.FC = () => {
             </div>
             <button
               onClick={() => setSellerDashboardTab('products')}
-              className="text-xs font-semibold text-amber-800 hover:underline"
+              className="text-xs font-semibold text-amber-800 hover:underline cursor-pointer"
             >
               Update stock
             </button>
@@ -166,13 +173,13 @@ export const OverviewTab: React.FC = () => {
             {lowStockProducts.map((p) => (
               <div
                 key={p.id}
-                className="bg-white p-3 rounded-xl border border-amber-200/80 flex items-center justify-between text-xs"
+                className="bg-white p-3 rounded-xl border border-amber-200 flex items-center justify-between text-xs"
               >
                 <div className="min-w-0 pr-2">
-                  <div className="font-semibold text-slate-900 truncate">{p.name}</div>
-                  <div className="text-[11px] text-slate-400">{p.category}</div>
+                  <div className="font-semibold text-[#0F172A] truncate">{p.name}</div>
+                  <div className="text-[11px] text-[#64748B]">{p.category}</div>
                 </div>
-                <span className="font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded shrink-0">
+                <span className="font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded shrink-0 tabular-nums">
                   {p.stock} left
                 </span>
               </div>
@@ -182,16 +189,16 @@ export const OverviewTab: React.FC = () => {
       )}
 
       {/* Recent Orders Section */}
-      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-xs space-y-4">
+      <div className="bg-white rounded-2xl p-6 sm:p-7 border border-[#E2E8F0] shadow-xs space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-base font-bold text-slate-900">Recent Customer Orders</h3>
-            <p className="text-xs text-slate-500">Fulfilment parcels assigned to your shop</p>
+            <h3 className="text-base font-bold text-[#0F172A]">Recent Customer Orders</h3>
+            <p className="text-xs text-[#64748B]">Fulfilment parcels assigned to your shop</p>
           </div>
           {orders.length > 0 && (
             <button
               onClick={() => setSellerDashboardTab('orders')}
-              className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 cursor-pointer"
+              className="text-xs font-semibold text-[#2563EB] hover:text-[#1D4ED8] flex items-center gap-1 cursor-pointer"
             >
               <span>View All ({orders.length})</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -230,7 +237,7 @@ export const OverviewTab: React.FC = () => {
 
                   <div className="flex items-center gap-4 self-end sm:self-auto">
                     <span className="text-sm font-bold text-slate-900 tabular-nums">
-                      ${ord.total.toFixed(2)}
+                      {formatPrice(ord.total)}
                     </span>
                     <span
                       className={`font-semibold px-2.5 py-1 rounded-md text-[11px] ${
@@ -256,7 +263,10 @@ export const OverviewTab: React.FC = () => {
             title="No Orders Received Yet"
             description="When customers purchase items from your shop, incoming fulfilment parcels will be listed here for confirmation."
             actionLabel="Add Your First Product"
-            onAction={() => setSellerDashboardTab('add-product')}
+            onAction={() => {
+              setEditingProductId(null);
+              setSellerDashboardTab('add-product');
+            }}
             compact
           />
         )}

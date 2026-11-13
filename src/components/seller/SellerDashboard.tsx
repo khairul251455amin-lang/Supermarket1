@@ -18,8 +18,6 @@ import {
   Menu,
   X,
   ExternalLink,
-  ShieldCheck,
-  AlertTriangle,
 } from 'lucide-react';
 import { useMarketplace } from '../../context/MarketplaceContext';
 import { SellerDashboardTab } from '../../types';
@@ -41,7 +39,8 @@ export const SellerDashboard: React.FC = () => {
     unreadSellerNotificationsCount,
     unreadSellerMessagesCount,
     sellerOrders,
-    products,
+    sellerProducts,
+    setEditingProductId,
     navigateTo,
   } = useMarketplace();
 
@@ -49,17 +48,17 @@ export const SellerDashboard: React.FC = () => {
 
   if (!currentSeller) {
     return (
-      <div className="bg-white rounded-3xl p-10 text-center border border-slate-200/90 shadow-xs max-w-lg mx-auto my-12 space-y-4">
-        <div className="w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto">
+      <div className="bg-white rounded-2xl p-10 text-center border border-[#E2E8F0] shadow-xs max-w-lg mx-auto my-12 space-y-4">
+        <div className="w-14 h-14 rounded-2xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center mx-auto">
           <Store className="w-7 h-7" />
         </div>
-        <h2 className="text-xl font-bold text-slate-900">Seller Access Required</h2>
-        <p className="text-xs text-slate-500 leading-relaxed">
+        <h2 className="text-xl font-bold text-[#0F172A]">Seller Access Required</h2>
+        <p className="text-xs text-[#64748B] leading-relaxed">
           You need an active seller account to view the merchant console.
         </p>
         <button
           onClick={() => navigateTo('seller-register')}
-          className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-xl shadow-xs"
+          className="px-5 py-2.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-semibold text-xs rounded-xl shadow-xs cursor-pointer"
         >
           Open a Seller Shop
         </button>
@@ -72,8 +71,8 @@ export const SellerDashboard: React.FC = () => {
     (so) => so.sellerId === currentSeller.id && so.status === 'Pending'
   ).length;
 
-  const lowStockCount = products.filter(
-    (p) => p.sellerId === currentSeller.id && p.stock > 0 && p.stock <= 5
+  const lowStockCount = sellerProducts.filter(
+    (p) => (p.stockQuantity ?? p.stock) > 0 && (p.stockQuantity ?? p.stock) <= 5
   ).length;
 
   const navItems: {
@@ -146,22 +145,22 @@ export const SellerDashboard: React.FC = () => {
   return (
     <div className="min-h-[80vh] flex flex-col lg:flex-row gap-6 items-start">
       {/* Mobile Header Bar */}
-      <div className="w-full lg:hidden flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-200 shadow-xs">
+      <div className="w-full lg:hidden flex items-center justify-between p-4 bg-white rounded-2xl border border-[#E2E8F0] shadow-xs">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold">
+          <div className="w-9 h-9 rounded-xl bg-[#2563EB] text-white flex items-center justify-center font-bold">
             {currentSeller.shopName.charAt(0)}
           </div>
           <div>
-            <div className="text-xs font-bold text-slate-900 truncate max-w-[150px]">
+            <div className="text-xs font-bold text-[#0F172A] truncate max-w-[150px]">
               {currentSeller.shopName}
             </div>
-            <div className="text-[10px] text-slate-400 font-mono">ID: {currentSeller.id}</div>
+            <div className="text-[10px] text-[#64748B] font-mono">ID: {currentSeller.id}</div>
           </div>
         </div>
 
         <button
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="p-2 text-slate-600 hover:bg-slate-100 rounded-xl"
+          className="p-2 text-[#64748B] hover:bg-slate-100 rounded-xl cursor-pointer"
         >
           {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
@@ -171,14 +170,14 @@ export const SellerDashboard: React.FC = () => {
       <aside
         className={`${
           isMobileMenuOpen ? 'fixed inset-0 z-50 bg-white p-6 overflow-y-auto block' : 'hidden lg:block'
-        } w-full lg:w-64 bg-white rounded-3xl p-5 border border-slate-200/90 shadow-xs shrink-0 space-y-6 sticky top-24`}
+        } w-full lg:w-64 bg-white rounded-2xl p-5 border border-[#E2E8F0] shadow-xs shrink-0 space-y-6 lg:sticky lg:top-20`}
       >
         {isMobileMenuOpen && (
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100 lg:hidden">
-            <span className="font-bold text-sm text-slate-900">Seller Navigation</span>
+          <div className="flex items-center justify-between pb-3 border-b border-[#E2E8F0] lg:hidden">
+            <span className="font-bold text-sm text-[#0F172A]">Seller Navigation</span>
             <button
               onClick={() => setIsMobileMenuOpen(false)}
-              className="p-1 rounded-full text-slate-400 hover:text-slate-600"
+              className="p-1 rounded-full text-[#64748B] hover:text-[#0F172A]"
             >
               <X className="w-5 h-5" />
             </button>
@@ -186,23 +185,23 @@ export const SellerDashboard: React.FC = () => {
         )}
 
         {/* Shop Avatar & Badge */}
-        <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
+        <div className="flex items-center gap-3 pb-4 border-b border-[#E2E8F0]">
           {currentSeller.shopLogo ? (
             <img
               src={currentSeller.shopLogo}
               alt={currentSeller.shopName}
-              className="w-11 h-11 rounded-xl object-cover border border-slate-200"
+              className="w-11 h-11 rounded-xl object-cover border border-[#E2E8F0]"
             />
           ) : (
-            <div className="w-11 h-11 rounded-xl bg-blue-100 text-blue-700 font-bold text-lg flex items-center justify-center">
+            <div className="w-11 h-11 rounded-xl bg-[#EFF6FF] text-[#2563EB] font-bold text-lg flex items-center justify-center">
               {currentSeller.shopName.charAt(0).toUpperCase()}
             </div>
           )}
           <div className="min-w-0">
-            <h3 className="text-xs font-bold text-slate-900 truncate">
+            <h3 className="text-xs font-bold text-[#0F172A] truncate">
               {currentSeller.shopName}
             </h3>
-            <span className="text-[10px] font-mono font-medium text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+            <span className="text-[10px] font-mono font-medium text-[#64748B] bg-[#F8FAFC] border border-[#E2E8F0] px-1.5 py-0.5 rounded">
               ID: {currentSeller.id}
             </span>
           </div>
@@ -218,13 +217,16 @@ export const SellerDashboard: React.FC = () => {
               <button
                 key={item.tab}
                 onClick={() => {
+                  if (item.tab === 'add-product') {
+                    setEditingProductId(null);
+                  }
                   setSellerDashboardTab(item.tab);
                   setIsMobileMenuOpen(false);
                 }}
                 className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                   isActive
-                    ? 'bg-blue-600 text-white shadow-xs'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                    ? 'bg-[#2563EB] text-white shadow-xs'
+                    : 'text-[#64748B] hover:bg-[#EFF6FF]/60 hover:text-[#0F172A]'
                 }`}
               >
                 <div className="flex items-center gap-2.5">
@@ -235,7 +237,7 @@ export const SellerDashboard: React.FC = () => {
                 {typeof item.badge === 'number' && item.badge > 0 && (
                   <span
                     className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full text-white tabular-nums ${
-                      isActive ? 'bg-blue-800' : item.badgeColor || 'bg-blue-600'
+                      isActive ? 'bg-[#1D4ED8]' : item.badgeColor || 'bg-[#2563EB]'
                     }`}
                   >
                     {item.badge}
@@ -247,10 +249,10 @@ export const SellerDashboard: React.FC = () => {
         </nav>
 
         {/* Marketplace Switcher */}
-        <div className="pt-4 border-t border-slate-100 space-y-2">
+        <div className="pt-4 border-t border-[#E2E8F0] space-y-2">
           <button
             onClick={() => navigateTo('home')}
-            className="w-full flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-slate-600 hover:text-blue-600 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer"
+            className="w-full flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-[#64748B] hover:text-[#2563EB] hover:bg-[#F8FAFC] rounded-xl transition-colors cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Customer Website</span>
@@ -258,7 +260,7 @@ export const SellerDashboard: React.FC = () => {
 
           <button
             onClick={() => navigateTo('shop', { sellerId: currentSeller.id })}
-            className="w-full flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors cursor-pointer"
+            className="w-full flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-[#1D4ED8] bg-[#EFF6FF] hover:bg-blue-100 rounded-xl transition-colors cursor-pointer"
           >
             <ExternalLink className="w-4 h-4" />
             <span>Preview Public Shop</span>
@@ -266,7 +268,7 @@ export const SellerDashboard: React.FC = () => {
 
           <button
             onClick={() => navigateTo('welcome')}
-            className="w-full flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer"
+            className="w-full flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-[#64748B] hover:text-[#0F172A] hover:bg-[#F8FAFC] rounded-xl transition-colors cursor-pointer"
           >
             <Store className="w-4 h-4" />
             <span>Welcome Experience</span>

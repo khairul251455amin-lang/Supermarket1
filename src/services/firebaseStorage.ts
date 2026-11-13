@@ -179,15 +179,15 @@ async function executeUpload(
           }
         );
 
-        // Strict timeout: If live bucket does not respond or 404s within 5 seconds, cancel and reject
+        // Strict timeout: If live bucket does not respond or 404s within 2.5 seconds, cancel and fall back cleanly
         const timer = setTimeout(() => {
           try {
             uploadTask.cancel();
           } catch {
             // ignore
           }
-          reject(new Error('Firebase Storage timeout: Bucket endpoint did not complete within 5 seconds.'));
-        }, 5000);
+          reject(new Error('Firebase Storage timeout: Bucket endpoint unavailable.'));
+        }, 2500);
 
         // Ensure timer is cleared if task completes
         uploadTask.then(
@@ -201,11 +201,11 @@ async function executeUpload(
       return await liveUploadPromise;
     } catch (uploadError) {
       console.warn(
-        `[Supermarket Storage] Firebase Storage live upload was unavailable (${
+        `[Marketplace Storage] Firebase Storage bucket unavailable (${
           uploadError instanceof Error ? uploadError.message : String(uploadError)
-        }). Gracefully saving verified client-compressed WebP asset locally.`
+        }). Using optimized WebP data asset for cross-device Firestore storage.`
       );
-      // Fall through to guaranteed client-side persistence
+      // Fall through to returning verified <= 160 KB compressed WebP dataUrl
     }
   }
 

@@ -3,21 +3,43 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+export type ProductStatus =
+  | 'draft'
+  | 'published'
+  | 'paused'
+  | 'out_of_stock'
+  | 'removed';
+
+export type DeliveryMethod = 'Seller Delivery' | 'Supermarket Delivery';
+
 export interface Product {
   id: string;
   name: string;
   description: string;
+  price: number;
+  compareAtPrice?: number;
   originalPrice: number;
   discountedPrice?: number; // Only supplied if genuine discount exists
   discountPercentage?: number; // Only supplied if genuine discount exists
+  currency: string;
   stock: number;
+  stockQuantity: number;
   images: string[];
   category: string;
   subcategory?: string;
   sellerName: string;
+  shopName: string;
   sellerId: string;
+  shopId: string;
+  ownerUid: string;
   sellerLocation?: string;
+  location?: string;
+  deliveryOptions?: DeliveryMethod[];
+  searchKeywords?: string[];
+  status: ProductStatus;
   createdAt: string;
+  updatedAt?: string;
+  publishedAt?: string;
   isAvailable?: boolean; // Seller can toggle availability
   isFeatured?: boolean;
   isRecommended?: boolean;
@@ -50,6 +72,7 @@ export interface User {
   phoneNumber?: string;
   profilePhoto?: string;
   deliveryAddress?: Address;
+  favourites?: string[];
   createdAt: string;
   isSeller?: boolean;
   sellerId?: string;
@@ -57,21 +80,48 @@ export interface User {
 
 export interface SellerAccount {
   id: string; // Permanent unique Seller ID (e.g., SELL-8291)
+  ownerUid: string; // Firebase Auth UID of the shop owner
   userId?: string; // Optional linked customer User ID
   fullName: string;
   shopName: string;
+  shopCategory?: string;
   phone: string;
   email: string;
   shopLocation: string;
   shopDescription: string;
   shopLogo?: string;
   isOpen: boolean; // Open or temporarily closed
+  showSellerName?: boolean;
+  showSellerId?: boolean;
+  deliveryOptions?: DeliveryMethod[];
   createdAt: string;
+  updatedAt?: string;
   notificationPreferences?: {
     orderUpdates: boolean;
     messages: boolean;
     lowStock: boolean;
   };
+}
+
+export interface PublicShop {
+  id: string;
+  shopId: string;
+  sellerId: string;
+  ownerUid: string;
+  shopName: string;
+  publicSellerName?: string;
+  shopCategory?: string;
+  shopLocation: string;
+  shopDescription: string;
+  shopLogo?: string;
+  isOpen: boolean;
+  showSellerName?: boolean;
+  showSellerId?: boolean;
+  deliveryOptions?: DeliveryMethod[];
+  rating?: number | null;
+  ratingCount?: number;
+  createdAt: string;
+  updatedAt?: string;
 }
 
 export interface CartItem {
@@ -89,8 +139,6 @@ export type OrderStatus =
   | 'Delivered'
   | 'Cancelled';
 
-export type DeliveryMethod = 'Seller Delivery' | 'Supermarket Delivery';
-
 export interface OrderItem {
   productId: string;
   productName: string;
@@ -106,7 +154,9 @@ export interface SellerFulfilmentOrder {
   id: string; // e.g., SO-1042-SELL01
   parentOrderId: string;
   sellerId: string;
+  sellerOwnerUid: string;
   sellerName: string;
+  customerUid: string;
   customerName: string;
   customerPhone: string;
   deliveryAddress: Address;
@@ -129,6 +179,7 @@ export interface SellerFulfilmentOrder {
 export interface Order {
   id: string;
   customerId: string;
+  customerUid: string;
   customerName: string;
   customerPhone: string;
   deliveryAddress: Address;
@@ -139,7 +190,7 @@ export interface Order {
   paymentMethod: 'Cash on Delivery';
   status: OrderStatus;
   createdAt: string;
-  isSimulated: boolean;
+  isSimulated?: boolean;
   notes?: string;
   sellerOrders?: SellerFulfilmentOrder[];
   deliveryMethodBySeller?: Record<string, DeliveryMethod>;
@@ -157,6 +208,7 @@ export interface Message {
   id: string;
   conversationId: string;
   sender: 'customer' | 'seller';
+  senderUid?: string;
   senderName: string;
   text: string;
   createdAt: string;
@@ -167,8 +219,10 @@ export interface Message {
 export interface Conversation {
   id: string;
   sellerId: string;
+  sellerOwnerUid?: string;
   sellerName: string;
-  customerId?: string;
+  customerId: string;
+  customerUid: string;
   customerName?: string;
   lastMessageText: string;
   lastMessageTime: string;
@@ -176,6 +230,7 @@ export interface Conversation {
   unreadBySellerCount?: number;
   productRef?: ProductReference;
   orderRef?: { id: string; total: number };
+  createdAt?: string;
 }
 
 export type NotificationType =
@@ -188,6 +243,7 @@ export type NotificationType =
 
 export interface Notification {
   id: string;
+  recipientUid?: string;
   title: string;
   message: string;
   type: NotificationType;

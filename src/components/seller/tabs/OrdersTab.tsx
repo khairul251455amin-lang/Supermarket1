@@ -6,21 +6,16 @@
 import React, { useState, useMemo } from 'react';
 import {
   ShoppingBag,
-  Clock,
   CheckCircle2,
-  XCircle,
-  Truck,
-  RotateCcw,
-  DollarSign,
   MapPin,
   Phone,
   User,
-  AlertCircle,
-  ChevronDown,
   X,
+  Package,
 } from 'lucide-react';
 import { useMarketplace } from '../../../context/MarketplaceContext';
-import { OrderStatus, SellerFulfilmentOrder } from '../../../types';
+import { OrderStatus } from '../../../types';
+import { formatPrice, marketplaceConfig } from '../../../config/marketplaceConfig';
 import { EmptyState } from '../../common/EmptyState';
 
 export const OrdersTab: React.FC = () => {
@@ -49,47 +44,47 @@ export const OrdersTab: React.FC = () => {
     return myOrders.filter((o) => o.status === activeStatus);
   }, [myOrders, activeStatus]);
 
-  const handleConfirm = (orderId: string) => {
-    updateSellerOrderStatus(orderId, 'Confirmed');
+  const handleConfirm = async (orderId: string) => {
+    await updateSellerOrderStatus(orderId, 'Confirmed');
     setActionNotice(`Order #${orderId} confirmed.`);
     setTimeout(() => setActionNotice(null), 2500);
   };
 
-  const handleStartProcessing = (orderId: string) => {
-    updateSellerOrderStatus(orderId, 'Processing');
+  const handleStartProcessing = async (orderId: string) => {
+    await updateSellerOrderStatus(orderId, 'Processing');
     setActionNotice(`Order #${orderId} moved to Processing/Packing.`);
     setTimeout(() => setActionNotice(null), 2500);
   };
 
-  const handleMarkReadyForDelivery = (orderId: string) => {
-    updateSellerOrderStatus(orderId, 'Ready for Delivery');
+  const handleMarkReadyForDelivery = async (orderId: string) => {
+    await updateSellerOrderStatus(orderId, 'Ready for Delivery');
     setActionNotice(`Order #${orderId} is Ready for Delivery.`);
     setTimeout(() => setActionNotice(null), 2500);
   };
 
-  const handleShip = (orderId: string) => {
-    updateSellerOrderStatus(orderId, 'Shipped');
+  const handleShip = async (orderId: string) => {
+    await updateSellerOrderStatus(orderId, 'Shipped');
     setActionNotice(`Order #${orderId} marked as Shipped/Dispatched.`);
     setTimeout(() => setActionNotice(null), 2500);
   };
 
-  const handleDeliver = (orderId: string) => {
-    updateSellerOrderStatus(orderId, 'Delivered');
+  const handleDeliver = async (orderId: string) => {
+    await updateSellerOrderStatus(orderId, 'Delivered');
     setActionNotice(`Order #${orderId} marked as Delivered.`);
     setTimeout(() => setActionNotice(null), 2500);
   };
 
-  const handleRecordCod = (orderId: string) => {
-    recordSellerCodCollection(orderId);
+  const handleRecordCod = async (orderId: string) => {
+    await recordSellerCodCollection(orderId);
     setActionNotice(`Cash on Delivery recorded for #${orderId}.`);
     setTimeout(() => setActionNotice(null), 2500);
   };
 
-  const handleRejectSubmit = (e: React.FormEvent) => {
+  const handleRejectSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!rejectingOrderId || !rejectionReason.trim()) return;
 
-    updateSellerOrderStatus(rejectingOrderId, 'Cancelled', rejectionReason.trim());
+    await updateSellerOrderStatus(rejectingOrderId, 'Cancelled', rejectionReason.trim());
     setActionNotice(`Order #${rejectingOrderId} was rejected.`);
     setRejectingOrderId(null);
     setRejectionReason('');
@@ -112,18 +107,18 @@ export const OrdersTab: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+          <h1 className="text-2xl font-bold tracking-tight text-[#0F172A]">
             Fulfilment Orders
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500">
+          <p className="text-xs sm:text-sm text-[#64748B]">
             Manage incoming customer purchases and update packaging/delivery statuses
           </p>
         </div>
       </div>
 
       {actionNotice && (
-        <div className="p-3.5 rounded-2xl bg-blue-50 border border-blue-200 text-xs text-blue-800 flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />
+        <div className="p-3.5 rounded-xl bg-[#EFF6FF] border border-blue-200 text-xs text-[#1D4ED8] flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 text-[#2563EB] shrink-0" />
           <span>{actionNotice}</span>
         </div>
       )}
@@ -143,14 +138,14 @@ export const OrdersTab: React.FC = () => {
               onClick={() => setActiveStatus(tab)}
               className={`shrink-0 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
                 isActive
-                  ? 'bg-blue-600 text-white shadow-xs'
-                  : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200/80'
+                  ? 'bg-[#2563EB] text-white shadow-xs'
+                  : 'bg-white hover:bg-[#EFF6FF] text-[#64748B] border border-[#E2E8F0]'
               }`}
             >
               <span>{tab}</span>
               <span
-                className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                  isActive ? 'bg-blue-700 text-white' : 'bg-slate-100 text-slate-600'
+                className={`text-[10px] px-1.5 py-0.2 rounded-full tabular-nums ${
+                  isActive ? 'bg-[#1D4ED8] text-white' : 'bg-[#F8FAFC] text-[#64748B]'
                 }`}
               >
                 {count}
@@ -176,7 +171,7 @@ export const OrdersTab: React.FC = () => {
             return (
               <div
                 key={order.id}
-                className="bg-white rounded-3xl p-6 border border-slate-200/90 shadow-xs space-y-5"
+                className="bg-white rounded-2xl p-5 sm:p-6 border border-[#E2E8F0] shadow-xs space-y-5"
               >
                 {/* Header row */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
@@ -261,21 +256,26 @@ export const OrdersTab: React.FC = () => {
                       className="py-2.5 first:pt-1 last:pb-1 flex items-center justify-between text-xs"
                     >
                       <div className="flex items-center gap-3">
-                        <img
-                          src={it.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=120&q=80'}
-                          alt={it.productName}
-                          referrerPolicy="no-referrer"
-                          className="w-12 h-12 rounded-xl object-cover bg-slate-100 shrink-0"
-                        />
+                        {it.image ? (
+                          <img
+                            src={it.image}
+                            alt={it.productName}
+                            className="w-12 h-12 rounded-xl object-cover bg-slate-100 shrink-0"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 shrink-0">
+                            <Package className="w-5 h-5" />
+                          </div>
+                        )}
                         <div>
                           <h4 className="font-semibold text-slate-900">{it.productName}</h4>
                           <div className="text-[11px] text-slate-400">
-                            Quantity: {it.quantity} · ${it.unitPrice.toFixed(2)} each
+                            Quantity: {it.quantity} · {formatPrice(it.unitPrice)} each
                           </div>
                         </div>
                       </div>
                       <div className="text-right font-bold text-slate-900 tabular-nums">
-                        ${it.total.toFixed(2)}
+                        {formatPrice(it.total)}
                       </div>
                     </div>
                   ))}
@@ -285,13 +285,13 @@ export const OrdersTab: React.FC = () => {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-slate-100 text-xs">
                   <div className="text-slate-500">
                     Payment Method: <strong>Cash on Delivery (COD)</strong> ·{' '}
-                    <span>Delivery Fee: ${order.deliveryFee.toFixed(2)}</span>
+                    <span>Delivery Fee: {formatPrice(order.deliveryFee)}</span>
                   </div>
 
                   <div className="flex items-center gap-2 self-end sm:self-auto">
                     <span className="text-slate-400">Parcel Total:</span>
                     <span className="text-base font-extrabold text-blue-600 tabular-nums">
-                      ${order.total.toFixed(2)}
+                      {formatPrice(order.total)}
                     </span>
                   </div>
                 </div>
@@ -302,13 +302,13 @@ export const OrdersTab: React.FC = () => {
                     <>
                       <button
                         onClick={() => setRejectingOrderId(order.id)}
-                        className="px-3.5 py-2 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-xl transition-colors min-h-[38px]"
+                        className="px-3.5 py-2 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-xl transition-colors min-h-[38px] cursor-pointer"
                       >
                         Reject Order
                       </button>
                       <button
-                        onClick={() => handleConfirm(order.id)}
-                        className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-xs transition-colors min-h-[38px]"
+                        onClick={() => void handleConfirm(order.id)}
+                        className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-xs transition-colors min-h-[38px] cursor-pointer"
                       >
                         Confirm Order
                       </button>
@@ -317,8 +317,8 @@ export const OrdersTab: React.FC = () => {
 
                   {order.status === 'Confirmed' && (
                     <button
-                      onClick={() => handleStartProcessing(order.id)}
-                      className="px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs transition-colors min-h-[38px]"
+                      onClick={() => void handleStartProcessing(order.id)}
+                      className="px-4 py-2 text-xs font-semibold text-white bg-[#1D4ED8] hover:bg-[#0F172A] rounded-xl shadow-xs transition-colors min-h-[38px] cursor-pointer"
                     >
                       Start Processing (Packing)
                     </button>
@@ -326,8 +326,8 @@ export const OrdersTab: React.FC = () => {
 
                   {order.status === 'Processing' && (
                     <button
-                      onClick={() => handleMarkReadyForDelivery(order.id)}
-                      className="px-4 py-2 text-xs font-semibold text-white bg-purple-600 hover:bg-purple-700 rounded-xl shadow-xs transition-colors min-h-[38px]"
+                      onClick={() => void handleMarkReadyForDelivery(order.id)}
+                      className="px-4 py-2 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-xl shadow-xs transition-colors min-h-[38px] cursor-pointer"
                     >
                       Mark Ready for Delivery
                     </button>
@@ -335,8 +335,8 @@ export const OrdersTab: React.FC = () => {
 
                   {order.status === 'Ready for Delivery' && isSellerDelivery && (
                     <button
-                      onClick={() => handleShip(order.id)}
-                      className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-xs transition-colors min-h-[38px]"
+                      onClick={() => void handleShip(order.id)}
+                      className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-xs transition-colors min-h-[38px] cursor-pointer"
                     >
                       Dispatch / Mark Shipped
                     </button>
@@ -344,27 +344,27 @@ export const OrdersTab: React.FC = () => {
 
                   {order.status === 'Ready for Delivery' && !isSellerDelivery && (
                     <button
-                      onClick={() => markSupermarketPickupReady(order.id)}
-                      className="px-4 py-2 text-xs font-semibold text-white bg-teal-600 hover:bg-teal-700 rounded-xl shadow-xs transition-colors min-h-[38px]"
+                      onClick={() => void markSupermarketPickupReady(order.id)}
+                      className="px-4 py-2 text-xs font-semibold text-white bg-teal-600 hover:bg-teal-700 rounded-xl shadow-xs transition-colors min-h-[38px] cursor-pointer"
                     >
-                      Confirm Supermarket Pickup Ready
+                      Confirm {marketplaceConfig.marketplaceName} Pickup Ready
                     </button>
                   )}
 
                   {order.status === 'Shipped' && isSellerDelivery && (
                     <>
                       <button
-                        onClick={() => handleDeliver(order.id)}
-                        className="px-4 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-xs transition-colors min-h-[38px]"
+                        onClick={() => void handleDeliver(order.id)}
+                        className="px-4 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-xs transition-colors min-h-[38px] cursor-pointer"
                       >
                         Mark as Delivered
                       </button>
                       {!order.codCollected && (
                         <button
-                          onClick={() => handleRecordCod(order.id)}
-                          className="px-4 py-2 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-xl border border-emerald-200 transition-colors min-h-[38px]"
+                          onClick={() => void handleRecordCod(order.id)}
+                          className="px-4 py-2 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-xl border border-emerald-200 transition-colors min-h-[38px] cursor-pointer"
                         >
-                          Record COD Collected (${order.total.toFixed(2)})
+                          Record COD Collected ({formatPrice(order.total)})
                         </button>
                       )}
                     </>
@@ -389,8 +389,8 @@ export const OrdersTab: React.FC = () => {
 
       {/* Reject Order Modal */}
       {rejectingOrderId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
-          <div className="w-full max-w-md bg-white rounded-3xl p-6 shadow-xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0F172A]/60 backdrop-blur-xs">
+          <div className="w-full max-w-md bg-white rounded-2xl p-6 border border-[#E2E8F0] shadow-xl space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-base font-bold text-slate-900">
                 Reject Order #{rejectingOrderId}

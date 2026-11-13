@@ -203,8 +203,8 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
 
       {/* Main Upload Box / Preview Area */}
       {previewUrl ? (
-        <div className="relative group rounded-2xl overflow-hidden border border-slate-200 bg-slate-900 shadow-xs">
-          <div className={`${getAspectClass()} w-full relative bg-slate-950 flex items-center justify-center overflow-hidden`}>
+        <div className="relative group rounded-2xl overflow-hidden border border-[#E2E8F0] bg-[#0F172A]">
+          <div className={`${getAspectClass()} w-full relative bg-[#0F172A] flex items-center justify-center overflow-hidden`}>
             <img
               src={previewUrl}
               alt={label}
@@ -213,13 +213,13 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
 
             {/* Processing / Progress Overlay */}
             {isProcessing && (
-              <div className="absolute inset-0 bg-slate-900/85 backdrop-blur-xs flex flex-col items-center justify-center p-4 text-white z-20">
+              <div className="absolute inset-0 bg-[#0F172A]/85 backdrop-blur-xs flex flex-col items-center justify-center p-4 text-white z-20">
                 <Loader2 className="w-8 h-8 text-blue-400 animate-spin mb-2" />
                 <p className="text-xs font-semibold text-center">{processingStep}</p>
                 {uploadProgress !== null && (
                   <div className="w-36 bg-slate-700 h-2 rounded-full mt-3 overflow-hidden shadow-inner">
                     <div
-                      className="bg-blue-500 h-full transition-all duration-150"
+                      className="bg-[#2563EB] h-full transition-all duration-150"
                       style={{ width: `${uploadProgress}%` }}
                     />
                   </div>
@@ -233,14 +233,14 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
             )}
 
             {/* Hover Actions Bar */}
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-95 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity flex items-end justify-between p-3 z-10">
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0F172A]/85 via-transparent to-transparent opacity-95 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity flex items-end justify-between p-3 z-10">
               <button
                 type="button"
                 onClick={triggerSelect}
                 disabled={disabled || isProcessing}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white text-slate-800 text-xs font-semibold hover:bg-slate-100 shadow-sm transition-transform active:scale-95 cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white text-[#0F172A] text-xs font-semibold hover:bg-slate-100 shadow-sm transition-transform active:scale-95 cursor-pointer"
               >
-                <RefreshCw className="w-3.5 h-3.5 text-blue-600" />
+                <RefreshCw className="w-3.5 h-3.5 text-[#2563EB]" />
                 <span>Replace</span>
               </button>
 
@@ -256,24 +256,24 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
             </div>
           </div>
 
-          {/* Metadata & Optimization Pill */}
-          <div className="p-2.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-600">
+          {/* Metadata Footer */}
+          <div className="p-2.5 bg-[#F8FAFC] border-t border-[#E2E8F0] flex items-center justify-between text-[11px] text-[#64748B]">
             <div className="flex items-center gap-1.5">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-              <span className="font-semibold text-slate-800">{label}</span>
+              <span className="font-semibold text-[#0F172A]">{label}</span>
               {required && <span className="text-rose-500 font-bold">*</span>}
             </div>
 
             {compressionStats ? (
-              <span className="font-mono text-[10px] bg-emerald-100 text-emerald-800 font-semibold px-2 py-0.5 rounded-full flex items-center gap-1">
+              <span className="font-mono text-[10px] text-emerald-700 font-semibold flex items-center gap-1">
                 <span>{compressionStats.optimizedSize}</span>
-                <span>•</span>
+                <span>·</span>
                 <span>{compressionStats.format}</span>
                 {compressionStats.reduction > 0 && <span>(-{compressionStats.reduction}%)</span>}
               </span>
             ) : (
-              <span className="font-mono text-[10px] bg-emerald-100 text-emerald-800 font-semibold px-2 py-0.5 rounded-full">
-                ✓ Ready • &le; 200 KB
+              <span className="font-mono text-[10px] text-emerald-700 font-semibold">
+                Ready · &le; 200 KB
               </span>
             )}
           </div>
@@ -290,8 +290,8 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
           onDrop={handleDrop}
           className={`group cursor-pointer rounded-2xl border-2 border-dashed transition-all p-5 flex flex-col items-center justify-center text-center ${
             isDragging
-              ? 'border-blue-500 bg-blue-50/60 scale-99'
-              : 'border-slate-200 hover:border-blue-400 bg-slate-50/60 hover:bg-blue-50/20'
+              ? 'border-[#2563EB] bg-[#EFF6FF] scale-99'
+              : 'border-[#E2E8F0] hover:border-[#2563EB] bg-[#F8FAFC] hover:bg-[#EFF6FF]/40'
           } ${disabled ? 'opacity-60 pointer-events-none' : ''}`}
         >
           <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform group-hover:bg-blue-600 group-hover:text-white shadow-xs">

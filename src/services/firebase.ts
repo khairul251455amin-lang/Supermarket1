@@ -3,20 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/**
- * Supermarket Firebase Integration Architecture
- * 
- * This service layer is architected to seamlessly connect with:
- * - Firebase Authentication (email/password sign-in, user state observers)
- * - Cloud Firestore (real-time collections: 'products', 'orders', 'users', 'conversations', 'notifications')
- * - Firebase Storage (product image gallery and user avatar uploads)
- * 
- * Status:
- * Currently in Phase 1 Prototype Mode. Local storage provides interactive state management
- * until Firebase configuration is provisioned.
- */
-
 import { isFirebaseConfigured, firebaseConfig } from './firebaseConfig';
+import { marketplaceConfig } from '../config/marketplaceConfig';
 
 export interface FirebaseConnectionStatus {
   isConfigured: boolean;
@@ -24,7 +12,7 @@ export interface FirebaseConnectionStatus {
   authReady: boolean;
   firestoreReady: boolean;
   storageReady: boolean;
-  mode: 'prototype-local' | 'firebase-live';
+  mode: 'offline-local' | 'firebase-live';
   notice: string;
 }
 
@@ -36,10 +24,10 @@ let cachedStatus: FirebaseConnectionStatus = {
   authReady: configured,
   firestoreReady: configured,
   storageReady: configured,
-  mode: configured ? 'firebase-live' : 'prototype-local',
+  mode: configured ? 'firebase-live' : 'offline-local',
   notice: configured
-    ? `Firebase is configured and live on project ${firebaseConfig.projectId}.`
-    : 'Firebase is not yet configured. The app is running in Phase 1 Prototype Mode with local state.',
+    ? `${marketplaceConfig.marketplaceName} connected to Firebase project ${firebaseConfig.projectId}.`
+    : 'Firebase is not configured.',
 };
 
 export const getFirebaseStatus = (): FirebaseConnectionStatus => {
@@ -49,4 +37,3 @@ export const getFirebaseStatus = (): FirebaseConnectionStatus => {
 export const setFirebaseStatus = (status: Partial<FirebaseConnectionStatus>) => {
   cachedStatus = { ...cachedStatus, ...status };
 };
-

@@ -2,7 +2,7 @@
   "entities": {
     "User": {
       "title": "User",
-      "description": "Customer and user profile",
+      "description": "Private customer profile and favourites",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
@@ -10,6 +10,7 @@
         "email": { "type": "string", "format": "email" },
         "phoneNumber": { "type": "string", "maxLength": 30 },
         "profilePhoto": { "type": "string" },
+        "favourites": { "type": "array" },
         "isSeller": { "type": "boolean" },
         "sellerId": { "type": "string" },
         "createdAt": { "type": "string" }
@@ -18,13 +19,15 @@
     },
     "SellerAccount": {
       "title": "SellerAccount",
-      "description": "Registered seller profile and shop information",
+      "description": "Private seller profile containing contact credentials",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
+        "ownerUid": { "type": "string" },
         "userId": { "type": "string" },
         "fullName": { "type": "string", "maxLength": 100 },
-        "shopName": { "type": "string", "maxLength": 100 },
+        "shopName": { "type": "string", "maxLength": 140 },
+        "shopCategory": { "type": "string" },
         "phone": { "type": "string", "maxLength": 30 },
         "email": { "type": "string", "format": "email" },
         "shopLocation": { "type": "string", "maxLength": 200 },
@@ -33,32 +36,68 @@
         "isOpen": { "type": "boolean" },
         "createdAt": { "type": "string" }
       },
-      "required": ["id", "fullName", "shopName", "phone", "shopLocation", "shopDescription", "isOpen", "createdAt"]
+      "required": ["id", "ownerUid", "fullName", "shopName", "phone", "email", "shopLocation", "isOpen", "createdAt"]
     },
-    "Product": {
-      "title": "Product",
-      "description": "Marketplace product listed by a seller with exactly two photos",
+    "PublicShop": {
+      "title": "PublicShop",
+      "description": "Public storefront info visible to visitors, customers, and other sellers",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
-        "name": { "type": "string", "maxLength": 150 },
-        "description": { "type": "string", "maxLength": 2000 },
+        "shopId": { "type": "string" },
+        "sellerId": { "type": "string" },
+        "ownerUid": { "type": "string" },
+        "shopName": { "type": "string" },
+        "publicSellerName": { "type": "string" },
+        "shopCategory": { "type": "string" },
+        "shopLocation": { "type": "string" },
+        "shopDescription": { "type": "string" },
+        "shopLogo": { "type": "string" },
+        "isOpen": { "type": "boolean" },
+        "deliveryOptions": { "type": "array" },
+        "rating": { "type": "number" },
+        "ratingCount": { "type": "number" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "shopId", "sellerId", "ownerUid", "shopName", "shopLocation", "isOpen", "createdAt"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Marketplace product listed by a seller with status workflow and 2 compressed photos",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string", "maxLength": 180 },
+        "description": { "type": "string", "maxLength": 2500 },
+        "price": { "type": "number" },
+        "compareAtPrice": { "type": "number" },
         "originalPrice": { "type": "number" },
         "discountedPrice": { "type": "number" },
         "discountPercentage": { "type": "number" },
+        "currency": { "type": "string" },
         "stock": { "type": "number" },
+        "stockQuantity": { "type": "number" },
         "images": { "type": "array" },
         "category": { "type": "string" },
         "subcategory": { "type": "string" },
         "sellerName": { "type": "string" },
+        "shopName": { "type": "string" },
         "sellerId": { "type": "string" },
+        "shopId": { "type": "string" },
+        "ownerUid": { "type": "string" },
         "sellerLocation": { "type": "string" },
+        "location": { "type": "string" },
+        "deliveryOptions": { "type": "array" },
+        "searchKeywords": { "type": "array" },
+        "status": { "type": "string" },
         "isAvailable": { "type": "boolean" },
         "isFeatured": { "type": "boolean" },
         "isRecommended": { "type": "boolean" },
-        "createdAt": { "type": "string" }
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" },
+        "publishedAt": { "type": "string" }
       },
-      "required": ["id", "name", "description", "originalPrice", "stock", "images", "category", "sellerName", "sellerId", "createdAt"]
+      "required": ["id", "name", "description", "price", "originalPrice", "stock", "images", "category", "sellerName", "sellerId", "ownerUid", "status", "createdAt"]
     },
     "Order": {
       "title": "Order",
@@ -67,17 +106,33 @@
       "properties": {
         "id": { "type": "string" },
         "customerId": { "type": "string" },
+        "customerUid": { "type": "string" },
         "customerName": { "type": "string" },
-        "customerEmail": { "type": "string" },
         "customerPhone": { "type": "string" },
-        "sellerId": { "type": "string" },
-        "sellerName": { "type": "string" },
         "status": { "type": "string" },
         "totalAmount": { "type": "number" },
+        "total": { "type": "number" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "customerId", "customerUid", "status", "totalAmount", "createdAt"]
+    },
+    "SellerFulfilmentOrder": {
+      "title": "SellerFulfilmentOrder",
+      "description": "Per-seller fulfilment parcel derived from a customer order",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "parentOrderId": { "type": "string" },
+        "sellerId": { "type": "string" },
+        "sellerOwnerUid": { "type": "string" },
+        "customerUid": { "type": "string" },
+        "sellerName": { "type": "string" },
+        "status": { "type": "string" },
+        "total": { "type": "number" },
         "deliveryMethod": { "type": "string" },
         "createdAt": { "type": "string" }
       },
-      "required": ["id", "customerId", "sellerId", "status", "totalAmount", "createdAt"]
+      "required": ["id", "parentOrderId", "sellerId", "sellerOwnerUid", "customerUid", "status", "total", "createdAt"]
     },
     "Conversation": {
       "title": "Conversation",
@@ -86,13 +141,15 @@
       "properties": {
         "id": { "type": "string" },
         "customerId": { "type": "string" },
+        "customerUid": { "type": "string" },
         "sellerId": { "type": "string" },
+        "sellerOwnerUid": { "type": "string" },
         "sellerName": { "type": "string" },
         "lastMessageText": { "type": "string" },
         "lastMessageTime": { "type": "string" },
         "createdAt": { "type": "string" }
       },
-      "required": ["id", "customerId", "sellerId", "createdAt"]
+      "required": ["id", "customerId", "customerUid", "sellerId", "createdAt"]
     },
     "Notification": {
       "title": "Notification",
@@ -100,38 +157,38 @@
       "type": "object",
       "properties": {
         "id": { "type": "string" },
-        "recipientId": { "type": "string" },
+        "recipientUid": { "type": "string" },
         "title": { "type": "string" },
         "message": { "type": "string" },
         "isRead": { "type": "boolean" },
         "createdAt": { "type": "string" }
       },
-      "required": ["id", "recipientId", "title", "message", "isRead", "createdAt"]
+      "required": ["id", "recipientUid", "title", "message", "isRead", "createdAt"]
     }
   },
   "firestore": {
     "/users/{userId}": {
       "schema": "User",
-      "description": "User profile records"
+      "description": "Private customer profile records"
     },
-    "/sellers/{sellerId}": {
-      "schema": "SellerAccount",
-      "description": "Seller shops and storefront details"
+    "/publicShops/{shopId}": {
+      "schema": "PublicShop",
+      "description": "Public seller storefront listings readable without authentication"
     },
     "/sellerAccounts/{sellerId}": {
       "schema": "SellerAccount",
-      "description": "Seller profile and shop records"
+      "description": "Private seller profile records"
     },
     "/products/{productId}": {
       "schema": "Product",
-      "description": "Marketplace products catalog"
+      "description": "Central marketplace products catalog"
     },
     "/orders/{orderId}": {
       "schema": "Order",
       "description": "Customer order records"
     },
     "/sellerOrders/{sellerOrderId}": {
-      "schema": "Order",
+      "schema": "SellerFulfilmentOrder",
       "description": "Seller fulfilment order records"
     },
     "/conversations/{conversationId}": {

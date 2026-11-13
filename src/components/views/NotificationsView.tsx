@@ -13,13 +13,16 @@ import {
   Megaphone,
   Store,
   ExternalLink,
+  Lock,
 } from 'lucide-react';
 import { useMarketplace } from '../../context/MarketplaceContext';
-import { NotificationType, AppView } from '../../types';
+import { NotificationType } from '../../types';
 import { EmptyState } from '../common/EmptyState';
 
 export const NotificationsView: React.FC = () => {
   const {
+    user,
+    currentSeller,
     notifications,
     markNotificationAsRead,
     clearAllNotifications,
@@ -27,6 +30,34 @@ export const NotificationsView: React.FC = () => {
   } = useMarketplace();
 
   const [activeTab, setActiveTab] = useState<'All' | NotificationType>('All');
+
+  if (!user && !currentSeller) {
+    return (
+      <div className="bg-white rounded-2xl p-10 text-center border border-[#E2E8F0] shadow-xs max-w-lg mx-auto my-12 space-y-4">
+        <div className="w-14 h-14 rounded-2xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center mx-auto">
+          <Lock className="w-7 h-7" />
+        </div>
+        <h2 className="text-xl font-bold text-[#0F172A]">Sign In to View Notifications</h2>
+        <p className="text-xs sm:text-sm text-[#64748B] leading-relaxed">
+          Please sign in or create an account to receive real-time order updates and seller replies.
+        </p>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+          <button
+            onClick={() => navigateTo('auth', { authMode: 'login' })}
+            className="w-full sm:w-auto px-6 py-2.5 text-xs font-semibold text-white bg-[#2563EB] hover:bg-[#1D4ED8] rounded-xl cursor-pointer min-h-[42px]"
+          >
+            Sign In
+          </button>
+          <button
+            onClick={() => navigateTo('auth', { authMode: 'register' })}
+            className="w-full sm:w-auto px-6 py-2.5 text-xs font-semibold text-[#0F172A] bg-[#F8FAFC] hover:bg-slate-100 border border-[#E2E8F0] rounded-xl cursor-pointer min-h-[42px]"
+          >
+            Create Account
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const filteredNotifs = notifications.filter((n) => {
     if (activeTab === 'All') return true;
@@ -43,12 +74,12 @@ export const NotificationsView: React.FC = () => {
         return <Store className="w-4 h-4 text-amber-600" />;
       case 'marketplace':
       default:
-        return <Megaphone className="w-4 h-4 text-indigo-600" />;
+        return <Megaphone className="w-4 h-4 text-[#1D4ED8]" />;
     }
   };
 
   const handleNotificationClick = (id: string, linkView?: string, linkId?: string) => {
-    markNotificationAsRead(id);
+    void markNotificationAsRead(id);
     if (linkView) {
       if (linkView === 'orders') {
         navigateTo('orders');
@@ -62,19 +93,19 @@ export const NotificationsView: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-12 max-w-4xl mx-auto">
-      <div className="flex items-center justify-between pb-4 border-b border-slate-200">
+      <div className="flex items-center justify-between pb-4 border-b border-[#E2E8F0]">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0F172A]">
             Notification Centre
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500">
+          <p className="text-xs sm:text-sm text-[#64748B]">
             Marketplace announcements, order updates, and seller communication
           </p>
         </div>
 
         {notifications.length > 0 && (
           <button
-            onClick={clearAllNotifications}
+            onClick={() => void clearAllNotifications()}
             className="text-xs font-semibold text-rose-600 hover:text-rose-700 flex items-center gap-1.5 cursor-pointer"
           >
             <Trash2 className="w-3.5 h-3.5" />
@@ -110,14 +141,14 @@ export const NotificationsView: React.FC = () => {
               onClick={() => setActiveTab(tab)}
               className={`shrink-0 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
                 isActive
-                  ? 'bg-blue-600 text-white shadow-xs'
-                  : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200/80'
+                  ? 'bg-[#2563EB] text-white shadow-xs'
+                  : 'bg-white hover:bg-[#EFF6FF] text-[#64748B] border border-[#E2E8F0]'
               }`}
             >
               <span>{label}</span>
               <span
-                className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                  isActive ? 'bg-blue-700 text-white' : 'bg-slate-100 text-slate-600'
+                className={`text-[10px] px-1.5 py-0.2 rounded-full tabular-nums ${
+                  isActive ? 'bg-[#1D4ED8] text-white' : 'bg-[#F8FAFC] text-[#64748B]'
                 }`}
               >
                 {count}
@@ -173,7 +204,7 @@ export const NotificationsView: React.FC = () => {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        markNotificationAsRead(notif.id);
+                        void markNotificationAsRead(notif.id);
                       }}
                       title="Mark as read"
                       className="p-1 rounded-lg text-slate-400 hover:text-blue-600"
@@ -193,7 +224,7 @@ export const NotificationsView: React.FC = () => {
         <EmptyState
           icon={Bell}
           title="No Notifications Yet"
-          description="Your notification feed starts completely empty. You will receive updates here for placed orders, seller message replies, and marketplace announcements."
+          description="You will receive real-time updates here for placed orders, seller message replies, and marketplace announcements."
           actionLabel="Explore Marketplace"
           onAction={() => navigateTo('home')}
         />

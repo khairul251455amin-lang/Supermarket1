@@ -15,91 +15,300 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    // Users collection
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['id', 'name', 'email', 'createdAt']) &&
+        data.keys().hasOnly([
+          'id', 'name', 'email', 'phoneNumber', 'profilePhoto',
+          'deliveryAddress', 'favourites', 'isSeller', 'sellerId', 'createdAt'
+        ]) &&
+        data.id is string && data.id.size() > 0 && data.id.size() <= 128 &&
+        data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+        data.email is string && data.email.size() > 0 && data.email.size() <= 160 &&
+        data.createdAt is string && data.createdAt.size() <= 64 &&
+        (!('phoneNumber' in data) || (data.phoneNumber is string && data.phoneNumber.size() <= 40)) &&
+        (!('favourites' in data) || (data.favourites is list && data.favourites.size() <= 500));
+    }
+
+    function isValidSellerAccount(data) {
+      return data.keys().hasAll([
+          'id', 'ownerUid', 'fullName', 'shopName', 'phone',
+          'email', 'shopLocation', 'isOpen', 'createdAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'ownerUid', 'userId', 'fullName', 'shopName', 'shopCategory',
+          'phone', 'email', 'shopLocation', 'shopDescription', 'shopLogo',
+          'isOpen', 'showSellerName', 'showSellerId', 'deliveryOptions',
+          'createdAt', 'updatedAt', 'notificationPreferences'
+        ]) &&
+        isValidId(data.id) &&
+        data.ownerUid is string && data.ownerUid == request.auth.uid &&
+        data.fullName is string && data.fullName.size() > 0 && data.fullName.size() <= 120 &&
+        data.shopName is string && data.shopName.size() > 0 && data.shopName.size() <= 140 &&
+        data.phone is string && data.phone.size() > 0 && data.phone.size() <= 40 &&
+        data.email is string && data.email.size() > 0 && data.email.size() <= 160 &&
+        data.shopLocation is string && data.shopLocation.size() > 0 && data.shopLocation.size() <= 200 &&
+        (!('shopDescription' in data) || (data.shopDescription is string && data.shopDescription.size() <= 1200)) &&
+        data.isOpen is bool &&
+        data.createdAt is string && data.createdAt.size() <= 64;
+    }
+
+    function isValidPublicShop(data) {
+      return data.keys().hasAll([
+          'id', 'shopId', 'sellerId', 'ownerUid', 'shopName',
+          'shopLocation', 'isOpen', 'createdAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'shopId', 'sellerId', 'ownerUid', 'shopName', 'publicSellerName',
+          'shopCategory', 'shopLocation', 'shopDescription', 'shopLogo',
+          'isOpen', 'showSellerName', 'showSellerId', 'deliveryOptions',
+          'rating', 'ratingCount', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        data.ownerUid is string && data.ownerUid == request.auth.uid &&
+        data.shopName is string && data.shopName.size() > 0 && data.shopName.size() <= 140 &&
+        data.shopLocation is string && data.shopLocation.size() > 0 && data.shopLocation.size() <= 200 &&
+        (!('shopDescription' in data) || (data.shopDescription is string && data.shopDescription.size() <= 1200)) &&
+        data.isOpen is bool &&
+        data.createdAt is string && data.createdAt.size() <= 64;
+    }
+
+    function isValidProductData(data) {
+      return data.keys().hasAll([
+          'id', 'name', 'description', 'price', 'originalPrice',
+          'currency', 'stock', 'stockQuantity', 'images', 'category',
+          'sellerName', 'shopName', 'sellerId', 'shopId', 'ownerUid',
+          'status', 'createdAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'name', 'description', 'price', 'compareAtPrice',
+          'originalPrice', 'discountedPrice', 'discountPercentage', 'currency',
+          'stock', 'stockQuantity', 'images', 'category', 'subcategory',
+          'sellerName', 'shopName', 'sellerId', 'shopId', 'ownerUid',
+          'sellerLocation', 'location', 'deliveryOptions', 'searchKeywords',
+          'status', 'createdAt', 'updatedAt', 'publishedAt',
+          'isAvailable', 'isFeatured', 'isRecommended',
+          'isRemovedByModeration', 'moderationReason'
+        ]) &&
+        isValidId(data.id) &&
+        data.name is string && data.name.size() > 0 && data.name.size() <= 180 &&
+        data.description is string && data.description.size() <= 2500 &&
+        data.price is number && data.price > 0 &&
+        data.originalPrice is number && data.originalPrice > 0 &&
+        data.currency is string && data.currency.size() > 0 && data.currency.size() <= 12 &&
+        data.stock is number && data.stock >= 0 &&
+        data.stockQuantity is number && data.stockQuantity >= 0 &&
+        data.images is list && data.images.size() == 2 &&
+        data.images[0] is string && data.images[1] is string &&
+        data.category is string && data.category.size() > 0 && data.category.size() <= 80 &&
+        data.sellerName is string && data.sellerName.size() > 0 && data.sellerName.size() <= 140 &&
+        data.sellerId is string && data.sellerId.size() > 0 && data.sellerId.size() <= 128 &&
+        data.ownerUid is string && data.ownerUid.size() > 0 &&
+        data.status in ['draft', 'published', 'paused', 'out_of_stock', 'removed'] &&
+        data.createdAt is string && data.createdAt.size() <= 64;
+    }
+
+    // Users collection: strictly private per user (no listing, no cross-user reads)
     match /users/{userId} {
-      allow read: if isSignedIn();
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId);
+      allow get: if isValidId(userId) && isOwner(userId);
+      allow list: if false;
+      allow create: if isValidId(userId) && isOwner(userId) && isValidUser(incoming());
+      allow update: if isValidId(userId) && isOwner(userId) && isValidUser(incoming()) &&
+        incoming().id == existing().id &&
+        incoming().createdAt == existing().createdAt;
       allow delete: if false;
     }
 
-    // Sellers / sellerAccounts collection
+    // Public Shops collection: safe storefront metadata readable by everyone (visitors, customers, other sellers)
+    match /publicShops/{shopId} {
+      allow get: if isValidId(shopId);
+      allow list: if true;
+      allow create: if isValidId(shopId) && isSignedIn() && isValidPublicShop(incoming()) &&
+        incoming().id == shopId && incoming().shopId == shopId;
+      allow update: if isValidId(shopId) && isSignedIn() &&
+        existing().ownerUid == request.auth.uid &&
+        isValidPublicShop(incoming()) &&
+        incoming().ownerUid == existing().ownerUid &&
+        incoming().sellerId == existing().sellerId &&
+        incoming().createdAt == existing().createdAt;
+      allow delete: if isValidId(shopId) && isSignedIn() && existing().ownerUid == request.auth.uid;
+    }
+
+    // Private Seller Accounts collection: contains contact PII (email, phone, fullName) - owner only
     match /sellerAccounts/{sellerId} {
-      allow read: if true;
-      allow create: if isSignedIn();
-      allow update: if isSignedIn() && (
-        resource.data.userId == request.auth.uid ||
-        request.resource.data.userId == request.auth.uid
-      );
-      allow delete: if false;
+      allow get: if isValidId(sellerId) && isSignedIn() && existing().ownerUid == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerUid == request.auth.uid;
+      allow create: if isValidId(sellerId) && isSignedIn() && isValidSellerAccount(incoming()) &&
+        incoming().id == sellerId;
+      allow update: if isValidId(sellerId) && isSignedIn() &&
+        existing().ownerUid == request.auth.uid &&
+        isValidSellerAccount(incoming()) &&
+        incoming().ownerUid == existing().ownerUid &&
+        incoming().id == existing().id &&
+        incoming().createdAt == existing().createdAt;
+      allow delete: if isValidId(sellerId) && isSignedIn() && existing().ownerUid == request.auth.uid;
     }
 
+    // Legacy sellers collection locked down to owner only
     match /sellers/{sellerId} {
-      allow read: if true;
-      allow create: if isSignedIn();
-      allow update: if isSignedIn() && (
-        resource.data.userId == request.auth.uid ||
-        request.resource.data.userId == request.auth.uid
-      );
-      allow delete: if false;
+      allow get: if isValidId(sellerId) && isSignedIn() && existing().ownerUid == request.auth.uid;
+      allow list, write: if false;
     }
 
-    // Products catalog
+    // Products catalog:
+    // - Anyone (including unauthenticated visitors) can get/list published products
+    // - Only the authenticated seller owner can read their drafts/paused/removed items and create/edit/delete
     match /products/{productId} {
-      allow read: if true;
-      allow create: if isSignedIn();
-      allow update: if isSignedIn() && resource.data.sellerId == request.auth.uid;
-      allow delete: if isSignedIn() && resource.data.sellerId == request.auth.uid;
+      allow get: if isValidId(productId) && (
+        existing().status == 'published' ||
+        (isSignedIn() && existing().ownerUid == request.auth.uid)
+      );
+
+      allow list: if resource.data.status == 'published' ||
+        (isSignedIn() && resource.data.ownerUid == request.auth.uid);
+
+      allow create: if isValidId(productId) && isSignedIn() &&
+        incoming().ownerUid == request.auth.uid &&
+        incoming().id == productId &&
+        isValidProductData(incoming()) &&
+        exists(/databases/$(database)/documents/sellerAccounts/$(incoming().sellerId)) &&
+        get(/databases/$(database)/documents/sellerAccounts/$(incoming().sellerId)).data.ownerUid == request.auth.uid;
+
+      allow update: if isValidId(productId) && isSignedIn() && (
+        (
+          // Tier 1: Seller owner updates their own product
+          existing().ownerUid == request.auth.uid &&
+          isValidProductData(incoming()) &&
+          incoming().ownerUid == existing().ownerUid &&
+          incoming().sellerId == existing().sellerId &&
+          incoming().id == existing().id &&
+          incoming().createdAt == existing().createdAt
+        ) || (
+          // Tier 2: Authenticated customer checkout stock decrement only
+          existing().status == 'published' &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['stock', 'stockQuantity', 'status', 'updatedAt']) &&
+          incoming().stock is number &&
+          incoming().stock >= 0 &&
+          incoming().stock < existing().stock &&
+          incoming().stockQuantity == incoming().stock &&
+          ((incoming().stock == 0 && incoming().status == 'out_of_stock') || (incoming().stock > 0 && incoming().status == 'published'))
+        )
+      );
+
+      allow delete: if isValidId(productId) && isSignedIn() && existing().ownerUid == request.auth.uid;
     }
 
-    // Customer Orders collection
+    // Customer Orders collection: scoped strictly to the ordering customer
     match /orders/{orderId} {
-      allow read: if isSignedIn() && (
-        resource.data.customerId == request.auth.uid ||
-        resource.data.sellerId == request.auth.uid
-      );
-      allow create: if isSignedIn() && request.resource.data.customerId == request.auth.uid;
-      allow update: if isSignedIn() && (
-        resource.data.customerId == request.auth.uid ||
-        resource.data.sellerId == request.auth.uid
-      );
+      allow get: if isValidId(orderId) && isSignedIn() && existing().customerUid == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.customerUid == request.auth.uid;
+      allow create: if isValidId(orderId) && isSignedIn() &&
+        incoming().customerUid == request.auth.uid &&
+        incoming().id == orderId &&
+        incoming().total is number && incoming().total >= 0 &&
+        incoming().items is list && incoming().items.size() > 0 &&
+        incoming().createdAt is string && incoming().createdAt.size() <= 64;
+      allow update: if isValidId(orderId) && isSignedIn() &&
+        existing().customerUid == request.auth.uid &&
+        incoming().customerUid == existing().customerUid &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']);
       allow delete: if false;
     }
 
-    // Seller-specific fulfilment orders
+    // Seller fulfilment orders: readable by seller owner or ordering customer
     match /sellerOrders/{sellerOrderId} {
-      allow read: if isSignedIn() && (
-        resource.data.sellerId == request.auth.uid ||
-        resource.data.customerId == request.auth.uid
+      allow get: if isValidId(sellerOrderId) && isSignedIn() && (
+        existing().sellerOwnerUid == request.auth.uid ||
+        existing().customerUid == request.auth.uid
       );
-      allow create: if isSignedIn();
-      allow update: if isSignedIn() && resource.data.sellerId == request.auth.uid;
+      allow list: if isSignedIn() && (
+        resource.data.sellerOwnerUid == request.auth.uid ||
+        resource.data.customerUid == request.auth.uid
+      );
+      allow create: if isValidId(sellerOrderId) && isSignedIn() &&
+        incoming().customerUid == request.auth.uid &&
+        incoming().id == sellerOrderId &&
+        incoming().sellerOwnerUid is string &&
+        incoming().total is number && incoming().total >= 0 &&
+        incoming().createdAt is string && incoming().createdAt.size() <= 64;
+      allow update: if isValidId(sellerOrderId) && isSignedIn() && (
+        (
+          existing().sellerOwnerUid == request.auth.uid &&
+          incoming().sellerOwnerUid == existing().sellerOwnerUid &&
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'status', 'codCollected', 'rejectionReason', 'readyForPickup',
+            'deliveryPersonAssigned', 'updatedAt'
+          ])
+        ) || (
+          existing().customerUid == request.auth.uid &&
+          incoming().customerUid == existing().customerUid &&
+          incoming().status == 'Cancelled' &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['status', 'rejectionReason', 'updatedAt'])
+        )
+      );
       allow delete: if false;
     }
 
-    // Conversations & Messages
+    // Conversations & Messages: strictly scoped to customer & seller participants
     match /conversations/{conversationId} {
-      allow read, write: if isSignedIn() && (
-        resource.data.customerId == request.auth.uid ||
-        resource.data.sellerId == request.auth.uid
+      allow get: if isValidId(conversationId) && isSignedIn() && (
+        existing().customerUid == request.auth.uid ||
+        existing().sellerOwnerUid == request.auth.uid
       );
+      allow list: if isSignedIn() && (
+        resource.data.customerUid == request.auth.uid ||
+        resource.data.sellerOwnerUid == request.auth.uid
+      );
+      allow create: if isValidId(conversationId) && isSignedIn() &&
+        incoming().customerUid == request.auth.uid &&
+        incoming().id == conversationId &&
+        incoming().sellerId is string &&
+        incoming().sellerOwnerUid is string;
+      allow update: if isValidId(conversationId) && isSignedIn() && (
+        existing().customerUid == request.auth.uid ||
+        existing().sellerOwnerUid == request.auth.uid
+      ) && incoming().diff(existing()).affectedKeys().hasOnly([
+        'lastMessageText', 'lastMessageTime', 'unreadCount', 'unreadBySellerCount'
+      ]);
+      allow delete: if false;
 
       match /messages/{messageId} {
-        allow read, create: if isSignedIn();
+        allow get, list: if isValidId(conversationId) && isSignedIn() && (
+          get(/databases/$(database)/documents/conversations/$(conversationId)).data.customerUid == request.auth.uid ||
+          get(/databases/$(database)/documents/conversations/$(conversationId)).data.sellerOwnerUid == request.auth.uid
+        );
+        allow create: if isValidId(conversationId) && isValidId(messageId) && isSignedIn() && (
+          get(/databases/$(database)/documents/conversations/$(conversationId)).data.customerUid == request.auth.uid ||
+          get(/databases/$(database)/documents/conversations/$(conversationId)).data.sellerOwnerUid == request.auth.uid
+        ) && incoming().text is string && incoming().text.size() > 0 && incoming().text.size() <= 2000;
+        allow update, delete: if false;
       }
     }
 
-    // Notifications
+    // Notifications: strictly scoped to recipient UID
     match /notifications/{notificationId} {
-      allow read, update: if isSignedIn() && (
-        resource.data.recipientId == request.auth.uid ||
-        resource.data.sellerId == request.auth.uid
-      );
-      allow create: if isSignedIn();
-      allow delete: if isSignedIn() && (
-        resource.data.recipientId == request.auth.uid ||
-        resource.data.sellerId == request.auth.uid
-      );
+      allow get: if isValidId(notificationId) && isSignedIn() && existing().recipientUid == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.recipientUid == request.auth.uid;
+      allow create: if isValidId(notificationId) && isSignedIn() &&
+        incoming().recipientUid is string &&
+        incoming().recipientUid.size() > 0 &&
+        incoming().title is string && incoming().title.size() <= 200 &&
+        incoming().message is string && incoming().message.size() <= 1000;
+      allow update: if isValidId(notificationId) && isSignedIn() &&
+        existing().recipientUid == request.auth.uid &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['isRead']);
+      allow delete: if isValidId(notificationId) && isSignedIn() && existing().recipientUid == request.auth.uid;
     }
   }
 }

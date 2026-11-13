@@ -11,73 +11,106 @@ import {
   Edit2,
   Trash2,
   Eye,
-  CheckCircle,
-  XCircle,
-  AlertTriangle,
-  RotateCcw,
-  SlidersHorizontal,
-  ExternalLink,
+  Pencil,
 } from 'lucide-react';
 import { useMarketplace } from '../../../context/MarketplaceContext';
-import { Product } from '../../../types';
+import { ProductStatus } from '../../../types';
+import { formatPrice } from '../../../config/marketplaceConfig';
 import { EmptyState } from '../../common/EmptyState';
 
 export const ProductsTab: React.FC = () => {
   const {
     currentSeller,
-    products,
+    sellerProducts,
     categories,
     deleteSellerProduct,
     toggleProductAvailability,
     updateSellerProduct,
     setSellerDashboardTab,
+    setEditingProductId,
     navigateTo,
   } = useMarketplace();
 
-  if (!currentSeller) return null;
-
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  const [stockFilter, setStockFilter] = useState<'all' | 'in-stock' | 'low-stock' | 'out-of-stock'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | ProductStatus>('all');
   const [editingStockId, setEditingStockId] = useState<string | null>(null);
   const [newStockVal, setNewStockVal] = useState<string>('');
-
-  // Seller's own products
-  const sellerProducts = useMemo(() => {
-    return products.filter((p) => p.sellerId === currentSeller.id);
-  }, [products, currentSeller.id]);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   const filteredProducts = useMemo(() => {
     return sellerProducts.filter((p) => {
       if (searchTerm.trim()) {
         const query = searchTerm.toLowerCase();
-        if (!p.name.toLowerCase().includes(query) && !p.description.toLowerCase().includes(query)) {
+        if (
+          !p.name.toLowerCase().includes(query) &&
+          !p.description.toLowerCase().includes(query)
+        ) {
           return false;
         }
       }
       if (selectedCategory !== 'All' && p.category.toLowerCase() !== selectedCategory.toLowerCase()) {
         return false;
       }
-      if (stockFilter === 'in-stock' && p.stock <= 0) return false;
-      if (stockFilter === 'low-stock' && (p.stock <= 0 || p.stock > 5)) return false;
-      if (stockFilter === 'out-of-stock' && p.stock > 0) return false;
+      if (statusFilter !== 'all' && p.status !== statusFilter) {
+        return false;
+      }
       return true;
     });
-  }, [sellerProducts, searchTerm, selectedCategory, stockFilter]);
+  }, [sellerProducts, searchTerm, selectedCategory, statusFilter]);
 
-  const handleDelete = (productId: string, name: string) => {
-    if (window.confirm(`Are you sure you want to delete "${name}" from the marketplace? This action cannot be undone.`)) {
-      deleteSellerProduct(productId);
+  if (!currentSeller) return null;
+
+  const handleConfirmDelete = async (productId: string) => {
+    setBusyId(productId);
+    try {
+      await deleteSellerProduct(productId);
+      setConfirmDeleteId(null);
+    } finally {
+      setBusyId(null);
     }
   };
 
-  const handleStockUpdateCommit = (productId: string) => {
+  const handleStockUpdateCommit = async (productId: string) => {
     const qty = parseInt(newStockVal, 10);
     if (!isNaN(qty) && qty >= 0) {
-      updateSellerProduct(productId, { stock: qty });
+      setBusyId(productId);
+      await updateSellerProduct(productId, {
+        stock: qty,
+        stockQuantity: qty,
+        status: qty > 0 ? 'published' : 'out_of_stock',
+        isAvailable: qty > 0,
+      });
+      setBusyId(null);
     }
     setEditingStockId(null);
     setNewStockVal('');
+  };
+
+  const handleToggleStatus = async (productId: string) => {
+    setBusyId(productId);
+    try {
+      await toggleProductAvailability(productId);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const getStatusBadge = (status: ProductStatus, qty: number) => {
+    if (status === 'published' && qty > 0) {
+      return { label: 'Published (Live)', cls: 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100' };
+    }
+    if (status === 'draft') {
+      return { label: 'Draft', cls: 'bg-blue-50 text-blue-700 hover:bg-blue-100' };
+    }
+    if (status === 'paused') {
+      return { label: 'Paused', cls: 'bg-slate-100 text-slate-600 hover:bg-slate-200' };
+    }
+    if (status === 'out_of_stock' || qty <= 0) {
+      return { label: 'Out of Stock', cls: 'bg-rose-50 text-rose-700 hover:bg-rose-100' };
+    }
+    return { label: 'Removed', cls: 'bg-slate-100 text-slate-500' };
   };
 
   return (
@@ -85,17 +118,20 @@ export const ProductsTab: React.FC = () => {
       {/* Top Header & Add Button */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+          <h1 className="text-2xl font-bold tracking-tight text-[#0F172A]">
             My Product Inventory
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500">
-            Manage your published items ({sellerProducts.length} total)
+          <p className="text-xs sm:text-sm text-[#64748B]">
+            Manage published, draft, paused, and out-of-stock products ({sellerProducts.length} total)
           </p>
         </div>
 
         <button
-          onClick={() => setSellerDashboardTab('add-product')}
-          className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-xs transition-colors cursor-pointer self-start sm:self-auto min-h-[42px]"
+          onClick={() => {
+            setEditingProductId(null);
+            setSellerDashboardTab('add-product');
+          }}
+          className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-semibold text-xs shadow-xs transition-colors cursor-pointer self-start sm:self-auto min-h-[42px]"
         >
           <Plus className="w-4 h-4" />
           <span>Add New Product</span>
@@ -103,24 +139,23 @@ export const ProductsTab: React.FC = () => {
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200/90 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 text-xs">
+      <div className="bg-white rounded-2xl p-4 sm:p-5 border border-[#E2E8F0] shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 text-xs">
         <div className="relative flex-1">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <Search className="w-4 h-4 text-[#64748B] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
             placeholder="Search by product title or description..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-3.5 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-blue-500"
+            className="w-full pl-9 pr-3.5 py-2 rounded-xl border border-[#E2E8F0] focus:outline-none focus:border-[#2563EB]"
           />
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* Category Dropdown */}
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="px-3 py-2 rounded-xl border border-slate-200 bg-white font-medium text-slate-700"
+            className="px-3 py-2 rounded-xl border border-[#E2E8F0] bg-white font-medium text-[#0F172A]"
           >
             <option value="All">All Categories</option>
             {categories.map((c) => (
@@ -130,40 +165,50 @@ export const ProductsTab: React.FC = () => {
             ))}
           </select>
 
-          {/* Stock Filter */}
           <select
-            value={stockFilter}
-            onChange={(e) => setStockFilter(e.target.value as any)}
-            className="px-3 py-2 rounded-xl border border-slate-200 bg-white font-medium text-slate-700"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as 'all' | ProductStatus)}
+            className="px-3 py-2 rounded-xl border border-[#E2E8F0] bg-white font-medium text-[#0F172A]"
           >
-            <option value="all">All Stock Levels</option>
-            <option value="in-stock">In Stock ({sellerProducts.filter((p) => p.stock > 0).length})</option>
-            <option value="low-stock">Low Stock (≤ 5)</option>
-            <option value="out-of-stock">Out of Stock ({sellerProducts.filter((p) => p.stock <= 0).length})</option>
+            <option value="all">All Statuses ({sellerProducts.length})</option>
+            <option value="published">
+              Published ({sellerProducts.filter((p) => p.status === 'published').length})
+            </option>
+            <option value="draft">
+              Draft ({sellerProducts.filter((p) => p.status === 'draft').length})
+            </option>
+            <option value="paused">
+              Paused ({sellerProducts.filter((p) => p.status === 'paused').length})
+            </option>
+            <option value="out_of_stock">
+              Out of Stock ({sellerProducts.filter((p) => p.status === 'out_of_stock').length})
+            </option>
           </select>
         </div>
       </div>
 
-      {/* Products Table / Cards */}
+      {/* Products Table */}
       {filteredProducts.length > 0 ? (
-        <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs overflow-hidden">
+        <div className="bg-white rounded-2xl border border-[#E2E8F0] shadow-xs overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs divide-y divide-slate-100">
-              <thead className="bg-slate-50 text-slate-500 font-semibold uppercase tracking-wider text-[11px]">
+            <table className="w-full text-left text-xs divide-y divide-[#E2E8F0]">
+              <thead className="bg-[#F8FAFC] text-[#64748B] font-semibold uppercase tracking-wider text-[11px]">
                 <tr>
                   <th className="py-3.5 px-4">Product</th>
                   <th className="py-3.5 px-3">Category</th>
                   <th className="py-3.5 px-3">Price</th>
                   <th className="py-3.5 px-3">Stock</th>
-                  <th className="py-3.5 px-3">Status</th>
+                  <th className="py-3.5 px-3">Status (Tap to Toggle)</th>
                   <th className="py-3.5 px-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-700">
+              <tbody className="divide-y divide-[#E2E8F0] text-[#0F172A]">
                 {filteredProducts.map((p) => {
-                  const hasDiscount = typeof p.discountedPrice === 'number' && p.discountedPrice < p.originalPrice;
+                  const hasDiscount =
+                    typeof p.discountedPrice === 'number' && p.discountedPrice < p.originalPrice;
                   const currentPrice = hasDiscount ? p.discountedPrice! : p.originalPrice;
-                  const isAvailable = p.isAvailable !== false && !p.isRemovedByModeration;
+                  const qty = p.stockQuantity ?? p.stock;
+                  const badge = getStatusBadge(p.status, qty);
 
                   return (
                     <tr key={p.id} className="hover:bg-slate-50/70 transition-colors">
@@ -177,7 +222,6 @@ export const ProductsTab: React.FC = () => {
                                   key={i}
                                   src={img}
                                   alt={`${p.name} photo ${i + 1}`}
-                                  referrerPolicy="no-referrer"
                                   className="w-11 h-11 rounded-xl object-cover bg-slate-100 ring-2 ring-white shadow-xs"
                                   title={`Photo ${i + 1}`}
                                 />
@@ -190,34 +234,27 @@ export const ProductsTab: React.FC = () => {
                           </div>
                           <div className="min-w-0 max-w-xs">
                             <h4 className="font-semibold text-slate-900 truncate">{p.name}</h4>
-                            <div className="text-[11px] text-slate-400 font-mono">
+                            <div className="text-[11px] text-slate-400 font-mono truncate">
                               ID: {p.id} {p.subcategory ? `· ${p.subcategory}` : ''}
                             </div>
                             <div className="text-[10px] text-blue-600 font-medium">
                               {p.images?.length || 0} photos attached
                             </div>
-                            {p.isRemovedByModeration && (
-                              <span className="text-[10px] text-rose-600 font-bold block mt-0.5">
-                                Prohibited: {p.moderationReason}
-                              </span>
-                            )}
                           </div>
                         </div>
                       </td>
 
                       {/* Category */}
-                      <td className="py-3.5 px-3 font-medium text-slate-800">
-                        {p.category}
-                      </td>
+                      <td className="py-3.5 px-3 font-medium text-slate-800">{p.category}</td>
 
                       {/* Price */}
                       <td className="py-3.5 px-3">
                         <div className="font-bold text-slate-900 tabular-nums">
-                          ${currentPrice.toFixed(2)}
+                          {formatPrice(currentPrice)}
                         </div>
                         {hasDiscount && (
                           <div className="text-[10px] text-slate-400 line-through tabular-nums">
-                            ${p.originalPrice.toFixed(2)} ({p.discountPercentage}% off)
+                            {formatPrice(p.originalPrice)} ({p.discountPercentage}% off)
                           </div>
                         )}
                       </td>
@@ -235,14 +272,15 @@ export const ProductsTab: React.FC = () => {
                               autoFocus
                             />
                             <button
-                              onClick={() => handleStockUpdateCommit(p.id)}
-                              className="px-2 py-1 bg-blue-600 text-white rounded font-bold"
+                              disabled={busyId === p.id}
+                              onClick={() => void handleStockUpdateCommit(p.id)}
+                              className="px-2 py-1 bg-blue-600 text-white rounded font-bold cursor-pointer"
                             >
                               ✓
                             </button>
                             <button
                               onClick={() => setEditingStockId(null)}
-                              className="px-1.5 py-1 bg-slate-200 text-slate-700 rounded"
+                              className="px-1.5 py-1 bg-slate-200 text-slate-700 rounded cursor-pointer"
                             >
                               ✕
                             </button>
@@ -251,21 +289,21 @@ export const ProductsTab: React.FC = () => {
                           <div
                             onClick={() => {
                               setEditingStockId(p.id);
-                              setNewStockVal(p.stock.toString());
+                              setNewStockVal(qty.toString());
                             }}
                             className="cursor-pointer group inline-flex items-center gap-1 hover:text-blue-600"
                             title="Click to update stock"
                           >
                             <span
                               className={`font-semibold tabular-nums ${
-                                p.stock <= 0
+                                qty <= 0
                                   ? 'text-rose-600'
-                                  : p.stock <= 5
+                                  : qty <= 5
                                   ? 'text-amber-600'
                                   : 'text-slate-800'
                               }`}
                             >
-                              {p.stock} units
+                              {qty} units
                             </span>
                             <Edit2 className="w-3 h-3 opacity-0 group-hover:opacity-100 text-slate-400" />
                           </div>
@@ -275,48 +313,68 @@ export const ProductsTab: React.FC = () => {
                       {/* Status */}
                       <td className="py-3.5 px-3">
                         <button
-                          onClick={() => toggleProductAvailability(p.id)}
-                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold cursor-pointer transition-colors ${
-                            !isAvailable
-                              ? 'bg-slate-100 text-slate-500'
-                              : p.stock <= 0
-                              ? 'bg-rose-50 text-rose-700'
-                              : 'bg-emerald-50 text-emerald-700'
-                          }`}
+                          disabled={busyId === p.id}
+                          onClick={() => void handleToggleStatus(p.id)}
+                          title={
+                            p.status === 'published'
+                              ? 'Click to pause visibility'
+                              : 'Click to publish live'
+                          }
+                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold cursor-pointer transition-colors disabled:opacity-50 ${badge.cls}`}
                         >
-                          {p.isRemovedByModeration ? (
-                            'Hidden'
-                          ) : !isAvailable ? (
-                            'Unavailable'
-                          ) : p.stock <= 0 ? (
-                            'Out of Stock'
-                          ) : (
-                            'Live on Website'
-                          )}
+                          {busyId === p.id ? 'Updating...' : badge.label}
                         </button>
                       </td>
 
                       {/* Actions */}
                       <td className="py-3.5 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          {/* Preview in Customer Web */}
-                          <button
-                            onClick={() => navigateTo('product', { productId: p.id })}
-                            title="Preview on Customer Website"
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
+                        {confirmDeleteId === p.id ? (
+                          <div className="inline-flex items-center gap-1.5 bg-rose-50 px-2.5 py-1 rounded-xl border border-rose-200">
+                            <span className="text-[11px] font-semibold text-rose-800">Delete?</span>
+                            <button
+                              disabled={busyId === p.id}
+                              onClick={() => void handleConfirmDelete(p.id)}
+                              className="text-[11px] font-bold text-white bg-rose-600 hover:bg-rose-700 px-2 py-0.5 rounded-md cursor-pointer"
+                            >
+                              {busyId === p.id ? '...' : 'Yes'}
+                            </button>
+                            <button
+                              onClick={() => setConfirmDeleteId(null)}
+                              className="text-[11px] font-semibold text-slate-600 hover:text-slate-900 px-1.5 py-0.5 cursor-pointer"
+                            >
+                              No
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() => {
+                                setEditingProductId(p.id);
+                                setSellerDashboardTab('add-product');
+                              }}
+                              title="Edit Product"
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
 
-                          {/* Delete */}
-                          <button
-                            onClick={() => handleDelete(p.id, p.name)}
-                            title="Delete Product"
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
+                            <button
+                              onClick={() => navigateTo('product', { productId: p.id })}
+                              title="Preview on Marketplace"
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+
+                            <button
+                              onClick={() => setConfirmDeleteId(p.id)}
+                              title="Delete Product"
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   );
@@ -335,11 +393,14 @@ export const ProductsTab: React.FC = () => {
           }
           description={
             sellerProducts.length === 0
-              ? 'Publish your first merchandise item. Products will immediately become available to customers across all categories.'
-              : 'Try clearing your search term or adjusting category/stock filters.'
+              ? 'Publish your first product. Published items immediately appear in the live marketplace for all shoppers and visitors.'
+              : 'Try clearing your search term or adjusting category/status filters.'
           }
           actionLabel="Add New Product"
-          onAction={() => setSellerDashboardTab('add-product')}
+          onAction={() => {
+            setEditingProductId(null);
+            setSellerDashboardTab('add-product');
+          }}
         />
       )}
     </div>

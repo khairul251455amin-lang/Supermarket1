@@ -22,7 +22,7 @@ export interface CompressionOptions {
   preferWebp?: boolean;
 }
 
-const MAX_ALLOWED_BYTES = 200 * 1024; // 200 KB hard limit
+const MAX_ALLOWED_BYTES = 160 * 1024; // <= 160 KB ceiling (strictly under 200 KB hard limit)
 const MIN_TARGET_BYTES = 50 * 1024; // 50 KB target floor
 
 /**

@@ -64,7 +64,7 @@ export const MARKETPLACE_CATEGORIES: Category[] = [
   },
   {
     id: 'other',
-    name: 'Other products',
+    name: 'Other Products',
     slug: 'other',
     description: 'General merchandise, household goods, specialty items, and more.',
     iconName: 'Package',
