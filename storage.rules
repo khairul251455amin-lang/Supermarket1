@@ -3,10 +3,15 @@ rules_version = '2';
 // Supermarket Multi-Vendor Marketplace - Storage Security Rules
 // Restricts file types to JPG, JPEG, PNG, WEBP and strictly caps size at 200 KB (204,800 bytes).
 // Allows public read access for customer marketplace browsing and shop logos.
+// Requires Firebase Authentication for all writes and deletes.
 
 service firebase.storage {
   match /b/{bucket}/o {
-    
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
     // Strict 200 KB maximum validation and image MIME type whitelist
     function isValidImagePayload() {
       return request.resource != null
@@ -16,22 +21,23 @@ service firebase.storage {
 
     // 1. Shop Logo Storage: "shops/{sellerId}/logo"
     // Public read so shoppers can view verified seller logos
-    // Enforces 200 KB maximum and valid image payload
+    // Requires signed-in seller session and enforces 200 KB maximum image payload
     match /shops/{sellerId}/logo {
       allow read: if true;
-      allow write: if isValidImagePayload();
-      allow delete: if true;
+      allow write: if isSignedIn() && isValidImagePayload();
+      allow delete: if isSignedIn();
     }
 
     // 2. Product Images Storage: "products/{sellerId}/{productId}/{imageName}"
     // Exactly two photos allowed per product: image1 and image2
     // Public read for customer catalog and product detail views
-    // Enforces 200 KB maximum and valid image payload
+    // Requires signed-in seller session and enforces 200 KB maximum image payload
     match /products/{sellerId}/{productId}/{imageName} {
       allow read: if true;
-      allow write: if (imageName == 'image1' || imageName == 'image2')
+      allow write: if isSignedIn()
+                   && (imageName == 'image1' || imageName == 'image2')
                    && isValidImagePayload();
-      allow delete: if true;
+      allow delete: if isSignedIn();
     }
 
     // Default catch-all deny rule for any unspecified paths

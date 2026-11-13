@@ -4,23 +4,27 @@
  */
 
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getAuth, Auth } from 'firebase/auth';
-import { getFirestore, Firestore } from 'firebase/firestore';
-import { getStorage, FirebaseStorage } from 'firebase/storage';
+import { getAuth, connectAuthEmulator, Auth } from 'firebase/auth';
+import { getFirestore, connectFirestoreEmulator, Firestore } from 'firebase/firestore';
+import { getStorage, connectStorageEmulator, FirebaseStorage } from 'firebase/storage';
 import appletConfig from '../../firebase-applet-config.json';
 
 /**
- * Firebase Client Configuration using firebase-applet-config.json with environment variable fallback.
+ * Firebase Client Configuration.
+ * Prioritizes explicit Vite environment variables (.env) so buyers can bind their
+ * own Firebase project seamlessly, while falling back to firebase-applet-config.json
+ * when running in the hosted AI Studio environment.
  */
 export const firebaseConfig = {
-  apiKey: appletConfig.apiKey || import.meta.env.VITE_FIREBASE_API_KEY || '',
-  authDomain: appletConfig.authDomain || import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || '',
-  projectId: appletConfig.projectId || import.meta.env.VITE_FIREBASE_PROJECT_ID || '',
-  storageBucket: appletConfig.storageBucket || import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || '',
-  messagingSenderId: appletConfig.messagingSenderId || import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
-  appId: appletConfig.appId || import.meta.env.VITE_FIREBASE_APP_ID || '',
-  measurementId: appletConfig.measurementId || import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || '',
-  firestoreDatabaseId: appletConfig.firestoreDatabaseId || '(default)',
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || appletConfig.apiKey || '',
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || appletConfig.authDomain || '',
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || appletConfig.projectId || '',
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || appletConfig.storageBucket || '',
+  messagingSenderId:
+    import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || appletConfig.messagingSenderId || '',
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || appletConfig.appId || '',
+  firestoreDatabaseId:
+    import.meta.env.VITE_FIREBASE_DATABASE_ID || appletConfig.firestoreDatabaseId || '(default)',
 };
 
 /**
@@ -62,6 +66,17 @@ export const db: Firestore = firebaseConfig.firestoreDatabaseId && firebaseConfi
 export const storage: FirebaseStorage = getStorage(app);
 storage.maxUploadRetryTime = 6000;
 storage.maxOperationRetryTime = 6000;
+
+// Connect to local Firebase Emulators when explicitly enabled via .env
+if (import.meta.env.VITE_FIREBASE_USE_EMULATORS === 'true' && typeof window !== 'undefined') {
+  try {
+    connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
+    connectFirestoreEmulator(db, '127.0.0.1', 8080);
+    connectStorageEmulator(storage, '127.0.0.1', 9199);
+  } catch {
+    // Ignore duplicate connection calls during hot module evaluation
+  }
+}
 
 export enum OperationType {
   CREATE = 'create',

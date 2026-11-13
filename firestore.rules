@@ -27,18 +27,32 @@ service cloud.firestore {
       return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
 
-    function isValidUser(data) {
+    function isValidUser(data, userId) {
       return data.keys().hasAll(['id', 'name', 'email', 'createdAt']) &&
         data.keys().hasOnly([
           'id', 'name', 'email', 'phoneNumber', 'profilePhoto',
           'deliveryAddress', 'favourites', 'isSeller', 'sellerId', 'createdAt'
         ]) &&
+        data.id == userId &&
         data.id is string && data.id.size() > 0 && data.id.size() <= 128 &&
         data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
         data.email is string && data.email.size() > 0 && data.email.size() <= 160 &&
         data.createdAt is string && data.createdAt.size() <= 64 &&
         (!('phoneNumber' in data) || (data.phoneNumber is string && data.phoneNumber.size() <= 40)) &&
-        (!('favourites' in data) || (data.favourites is list && data.favourites.size() <= 500));
+        (!('profilePhoto' in data) || (data.profilePhoto is string && data.profilePhoto.size() <= 300000)) &&
+        (!('favourites' in data) || (data.favourites is list && data.favourites.size() <= 500)) &&
+        // Prevent self-assigning seller role or hijacking another user's sellerId:
+        // Users can only hold isSeller == true if they own the referenced sellerAccounts doc.
+        (
+          (!('isSeller' in data) || data.isSeller == false) ||
+          (
+            data.isSeller == true &&
+            'sellerId' in data &&
+            isValidId(data.sellerId) &&
+            exists(/databases/$(database)/documents/sellerAccounts/$(data.sellerId)) &&
+            get(/databases/$(database)/documents/sellerAccounts/$(data.sellerId)).data.ownerUid == request.auth.uid
+          )
+        );
     }
 
     function isValidSellerAccount(data) {
@@ -59,9 +73,13 @@ service cloud.firestore {
         data.phone is string && data.phone.size() > 0 && data.phone.size() <= 40 &&
         data.email is string && data.email.size() > 0 && data.email.size() <= 160 &&
         data.shopLocation is string && data.shopLocation.size() > 0 && data.shopLocation.size() <= 200 &&
+        (!('shopCategory' in data) || (data.shopCategory is string && data.shopCategory.size() <= 80)) &&
         (!('shopDescription' in data) || (data.shopDescription is string && data.shopDescription.size() <= 1200)) &&
+        (!('shopLogo' in data) || (data.shopLogo is string && data.shopLogo.size() <= 300000)) &&
+        (!('deliveryOptions' in data) || (data.deliveryOptions is list && data.deliveryOptions.size() <= 5)) &&
         data.isOpen is bool &&
-        data.createdAt is string && data.createdAt.size() <= 64;
+        data.createdAt is string && data.createdAt.size() <= 64 &&
+        (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 64));
     }
 
     function isValidPublicShop(data) {
@@ -76,12 +94,19 @@ service cloud.firestore {
           'rating', 'ratingCount', 'createdAt', 'updatedAt'
         ]) &&
         isValidId(data.id) &&
+        data.shopId == data.id &&
+        data.sellerId == data.id &&
         data.ownerUid is string && data.ownerUid == request.auth.uid &&
         data.shopName is string && data.shopName.size() > 0 && data.shopName.size() <= 140 &&
         data.shopLocation is string && data.shopLocation.size() > 0 && data.shopLocation.size() <= 200 &&
+        (!('publicSellerName' in data) || (data.publicSellerName is string && data.publicSellerName.size() <= 120)) &&
+        (!('shopCategory' in data) || (data.shopCategory is string && data.shopCategory.size() <= 80)) &&
         (!('shopDescription' in data) || (data.shopDescription is string && data.shopDescription.size() <= 1200)) &&
+        (!('shopLogo' in data) || (data.shopLogo is string && data.shopLogo.size() <= 300000)) &&
+        (!('deliveryOptions' in data) || (data.deliveryOptions is list && data.deliveryOptions.size() <= 5)) &&
         data.isOpen is bool &&
-        data.createdAt is string && data.createdAt.size() <= 64;
+        data.createdAt is string && data.createdAt.size() <= 64 &&
+        (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 64));
     }
 
     function isValidProductData(data) {
@@ -110,21 +135,28 @@ service cloud.firestore {
         data.stock is number && data.stock >= 0 &&
         data.stockQuantity is number && data.stockQuantity >= 0 &&
         data.images is list && data.images.size() == 2 &&
-        data.images[0] is string && data.images[1] is string &&
+        data.images[0] is string && data.images[0].size() > 0 && data.images[0].size() <= 350000 &&
+        data.images[1] is string && data.images[1].size() > 0 && data.images[1].size() <= 350000 &&
         data.category is string && data.category.size() > 0 && data.category.size() <= 80 &&
+        (!('subcategory' in data) || (data.subcategory is string && data.subcategory.size() <= 80)) &&
         data.sellerName is string && data.sellerName.size() > 0 && data.sellerName.size() <= 140 &&
+        data.shopName is string && data.shopName.size() > 0 && data.shopName.size() <= 140 &&
         data.sellerId is string && data.sellerId.size() > 0 && data.sellerId.size() <= 128 &&
-        data.ownerUid is string && data.ownerUid.size() > 0 &&
+        data.shopId is string && data.shopId == data.sellerId &&
+        data.ownerUid is string && data.ownerUid.size() > 0 && data.ownerUid.size() <= 128 &&
+        (!('searchKeywords' in data) || (data.searchKeywords is list && data.searchKeywords.size() <= 30)) &&
+        (!('deliveryOptions' in data) || (data.deliveryOptions is list && data.deliveryOptions.size() <= 5)) &&
         data.status in ['draft', 'published', 'paused', 'out_of_stock', 'removed'] &&
-        data.createdAt is string && data.createdAt.size() <= 64;
+        data.createdAt is string && data.createdAt.size() <= 64 &&
+        (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 64));
     }
 
     // Users collection: strictly private per user (no listing, no cross-user reads)
     match /users/{userId} {
       allow get: if isValidId(userId) && isOwner(userId);
       allow list: if false;
-      allow create: if isValidId(userId) && isOwner(userId) && isValidUser(incoming());
-      allow update: if isValidId(userId) && isOwner(userId) && isValidUser(incoming()) &&
+      allow create: if isValidId(userId) && isOwner(userId) && isValidUser(incoming(), userId);
+      allow update: if isValidId(userId) && isOwner(userId) && isValidUser(incoming(), userId) &&
         incoming().id == existing().id &&
         incoming().createdAt == existing().createdAt;
       allow delete: if false;
@@ -135,13 +167,20 @@ service cloud.firestore {
       allow get: if isValidId(shopId);
       allow list: if true;
       allow create: if isValidId(shopId) && isSignedIn() && isValidPublicShop(incoming()) &&
-        incoming().id == shopId && incoming().shopId == shopId;
+        incoming().id == shopId && incoming().shopId == shopId &&
+        (
+          exists(/databases/$(database)/documents/sellerAccounts/$(shopId)) ||
+          existsAfter(/databases/$(database)/documents/sellerAccounts/$(shopId))
+        );
       allow update: if isValidId(shopId) && isSignedIn() &&
         existing().ownerUid == request.auth.uid &&
         isValidPublicShop(incoming()) &&
         incoming().ownerUid == existing().ownerUid &&
         incoming().sellerId == existing().sellerId &&
-        incoming().createdAt == existing().createdAt;
+        incoming().shopId == existing().shopId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().get('rating', null) == existing().get('rating', null) &&
+        incoming().get('ratingCount', 0) == existing().get('ratingCount', 0);
       allow delete: if isValidId(shopId) && isSignedIn() && existing().ownerUid == request.auth.uid;
     }
 
@@ -192,6 +231,7 @@ service cloud.firestore {
           isValidProductData(incoming()) &&
           incoming().ownerUid == existing().ownerUid &&
           incoming().sellerId == existing().sellerId &&
+          incoming().shopId == existing().shopId &&
           incoming().id == existing().id &&
           incoming().createdAt == existing().createdAt
         ) || (
@@ -202,6 +242,7 @@ service cloud.firestore {
           incoming().stock >= 0 &&
           incoming().stock < existing().stock &&
           incoming().stockQuantity == incoming().stock &&
+          incoming().updatedAt is string && incoming().updatedAt.size() <= 64 &&
           ((incoming().stock == 0 && incoming().status == 'out_of_stock') || (incoming().stock > 0 && incoming().status == 'published'))
         )
       );
@@ -215,13 +256,18 @@ service cloud.firestore {
       allow list: if isSignedIn() && resource.data.customerUid == request.auth.uid;
       allow create: if isValidId(orderId) && isSignedIn() &&
         incoming().customerUid == request.auth.uid &&
+        incoming().customerId == request.auth.uid &&
         incoming().id == orderId &&
+        incoming().status == 'Pending' &&
         incoming().total is number && incoming().total >= 0 &&
-        incoming().items is list && incoming().items.size() > 0 &&
+        incoming().items is list && incoming().items.size() > 0 && incoming().items.size() <= 100 &&
         incoming().createdAt is string && incoming().createdAt.size() <= 64;
       allow update: if isValidId(orderId) && isSignedIn() &&
         existing().customerUid == request.auth.uid &&
+        existing().status == 'Pending' &&
+        incoming().status == 'Cancelled' &&
         incoming().customerUid == existing().customerUid &&
+        incoming().updatedAt is string && incoming().updatedAt.size() <= 64 &&
         incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']);
       allow delete: if false;
     }
@@ -239,19 +285,35 @@ service cloud.firestore {
       allow create: if isValidId(sellerOrderId) && isSignedIn() &&
         incoming().customerUid == request.auth.uid &&
         incoming().id == sellerOrderId &&
-        incoming().sellerOwnerUid is string &&
+        incoming().status == 'Pending' &&
+        isValidId(incoming().sellerId) &&
+        incoming().sellerOwnerUid is string && incoming().sellerOwnerUid.size() > 0 &&
+        exists(/databases/$(database)/documents/publicShops/$(incoming().sellerId)) &&
+        get(/databases/$(database)/documents/publicShops/$(incoming().sellerId)).data.ownerUid == incoming().sellerOwnerUid &&
         incoming().total is number && incoming().total >= 0 &&
         incoming().createdAt is string && incoming().createdAt.size() <= 64;
       allow update: if isValidId(sellerOrderId) && isSignedIn() && (
         (
+          // Seller owner progresses active fulfilment order
           existing().sellerOwnerUid == request.auth.uid &&
+          !(existing().status in ['Delivered', 'Cancelled']) &&
           incoming().sellerOwnerUid == existing().sellerOwnerUid &&
+          incoming().status in ['Pending', 'Confirmed', 'Processing', 'Ready for Delivery', 'Shipped', 'Delivered', 'Cancelled'] &&
           incoming().diff(existing()).affectedKeys().hasOnly([
             'status', 'codCollected', 'rejectionReason', 'readyForPickup',
             'deliveryPersonAssigned', 'updatedAt'
           ])
         ) || (
+          // Seller owner records COD collection after Delivered
+          existing().sellerOwnerUid == request.auth.uid &&
+          existing().status == 'Delivered' &&
+          incoming().status == 'Delivered' &&
+          incoming().codCollected == true &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['codCollected', 'updatedAt'])
+        ) || (
+          // Customer cancels only while Pending
           existing().customerUid == request.auth.uid &&
+          existing().status == 'Pending' &&
           incoming().customerUid == existing().customerUid &&
           incoming().status == 'Cancelled' &&
           incoming().diff(existing()).affectedKeys().hasOnly(['status', 'rejectionReason', 'updatedAt'])
@@ -273,8 +335,10 @@ service cloud.firestore {
       allow create: if isValidId(conversationId) && isSignedIn() &&
         incoming().customerUid == request.auth.uid &&
         incoming().id == conversationId &&
-        incoming().sellerId is string &&
-        incoming().sellerOwnerUid is string;
+        isValidId(incoming().sellerId) &&
+        incoming().sellerOwnerUid is string &&
+        exists(/databases/$(database)/documents/publicShops/$(incoming().sellerId)) &&
+        get(/databases/$(database)/documents/publicShops/$(incoming().sellerId)).data.ownerUid == incoming().sellerOwnerUid;
       allow update: if isValidId(conversationId) && isSignedIn() && (
         existing().customerUid == request.auth.uid ||
         existing().sellerOwnerUid == request.auth.uid
@@ -291,7 +355,9 @@ service cloud.firestore {
         allow create: if isValidId(conversationId) && isValidId(messageId) && isSignedIn() && (
           get(/databases/$(database)/documents/conversations/$(conversationId)).data.customerUid == request.auth.uid ||
           get(/databases/$(database)/documents/conversations/$(conversationId)).data.sellerOwnerUid == request.auth.uid
-        ) && incoming().text is string && incoming().text.size() > 0 && incoming().text.size() <= 2000;
+        ) && incoming().id == messageId &&
+          incoming().sender in ['customer', 'seller'] &&
+          incoming().text is string && incoming().text.size() > 0 && incoming().text.size() <= 2000;
         allow update, delete: if false;
       }
     }
@@ -301,10 +367,14 @@ service cloud.firestore {
       allow get: if isValidId(notificationId) && isSignedIn() && existing().recipientUid == request.auth.uid;
       allow list: if isSignedIn() && resource.data.recipientUid == request.auth.uid;
       allow create: if isValidId(notificationId) && isSignedIn() &&
+        incoming().id == notificationId &&
         incoming().recipientUid is string &&
-        incoming().recipientUid.size() > 0 &&
-        incoming().title is string && incoming().title.size() <= 200 &&
-        incoming().message is string && incoming().message.size() <= 1000;
+        incoming().recipientUid.size() > 0 && incoming().recipientUid.size() <= 128 &&
+        incoming().isRead == false &&
+        incoming().type in ['order', 'message', 'seller', 'marketplace', 'low_stock', 'moderation'] &&
+        incoming().title is string && incoming().title.size() > 0 && incoming().title.size() <= 200 &&
+        incoming().message is string && incoming().message.size() > 0 && incoming().message.size() <= 1000 &&
+        incoming().createdAt is string && incoming().createdAt.size() <= 64;
       allow update: if isValidId(notificationId) && isSignedIn() &&
         existing().recipientUid == request.auth.uid &&
         incoming().diff(existing()).affectedKeys().hasOnly(['isRead']);

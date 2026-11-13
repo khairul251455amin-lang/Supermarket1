@@ -1,0 +1,219 @@
+{
+  "demoAccounts": {
+    "customer": {
+      "email": "demo-customer@example.com",
+      "displayName": "Demo Customer",
+      "phoneNumber": "+1-555-014-8821",
+      "deliveryAddress": {
+        "fullName": "Demo Customer",
+        "phone": "+1-555-014-8821",
+        "street": "742 Evergreen Terrace, Apt 4B",
+        "city": "Springfield",
+        "stateDivision": "Central District",
+        "postalCode": "62704",
+        "deliveryNotes": "Leave at front desk if unavailable"
+      },
+      "favourites": [
+        "prod_demo_headphones_01",
+        "prod_demo_watch_02"
+      ]
+    },
+    "seller": {
+      "email": "demo-seller@example.com",
+      "fullName": "Demo Seller",
+      "sellerId": "SELL-DEMO01",
+      "shopName": "Northbridge Artisanal Goods",
+      "shopCategory": "Electronics",
+      "phone": "+1-555-019-4400",
+      "shopLocation": "Springfield Market Hub",
+      "shopDescription": "Curated consumer electronics, mechanical timepieces, apparel, and fresh orchard produce from Northbridge Demo Store.",
+      "shopLogo": "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240' viewBox='0 0 240 240'%3E%3Crect width='240' height='240' rx='36' fill='%232563EB'/%3E%3Ctext x='120' y='138' font-family='Arial,sans-serif' font-size='84' font-weight='700' fill='%23FFFFFF' text-anchor='middle'%3ENA%3C/text%3E%3C/svg%3E",
+      "isOpen": true,
+      "showSellerName": true,
+      "showSellerId": true,
+      "deliveryOptions": [
+        "Seller Delivery",
+        "Supermarket Delivery"
+      ],
+      "notificationPreferences": {
+        "orderUpdates": true,
+        "messages": true,
+        "lowStock": true
+      }
+    }
+  },
+  "categories": [
+    { "id": "clothing", "name": "Clothing", "slug": "clothing" },
+    { "id": "watches", "name": "Watches", "slug": "watches" },
+    { "id": "devices", "name": "Devices", "slug": "devices" },
+    { "id": "fruits", "name": "Fruits", "slug": "fruits" },
+    { "id": "electronics", "name": "Electronics", "slug": "electronics" },
+    { "id": "cakes", "name": "Cakes", "slug": "cakes" },
+    { "id": "juice", "name": "Juice", "slug": "juice" },
+    { "id": "accessories", "name": "Accessories", "slug": "accessories" },
+    { "id": "other", "name": "Other Products", "slug": "other" }
+  ],
+  "products": [
+    {
+      "id": "prod_demo_headphones_01",
+      "name": "AeroPulse Wireless ANC Headphones",
+      "description": "Studio-tuned active noise cancelling over-ear headphones with 40-hour battery life, multipoint Bluetooth 5.3 pairing, and memory foam ear cushions.",
+      "price": 119,
+      "compareAtPrice": 149,
+      "originalPrice": 149,
+      "discountedPrice": 119,
+      "discountPercentage": 20,
+      "currency": "USD",
+      "stock": 18,
+      "stockQuantity": 18,
+      "images": [
+        "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='480' viewBox='0 0 640 480'%3E%3Crect width='640' height='480' fill='%23EFF6FF'/%3E%3Ccircle cx='320' cy='230' r='110' fill='none' stroke='%230F172A' stroke-width='24'/%3E%3Crect x='175' y='210' width='48' height='115' rx='22' fill='%232563EB'/%3E%3Crect x='417' y='210' width='48' height='115' rx='22' fill='%232563EB'/%3E%3Ctext x='320' y='425' font-family='Arial,sans-serif' font-size='22' font-weight='700' fill='%230F172A' text-anchor='middle'%3EAeroPulse ANC Front%3C/text%3E%3C/svg%3E",
+        "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='480' viewBox='0 0 640 480'%3E%3Crect width='640' height='480' fill='%23F8FAFC'/%3E%3Crect x='180' y='120' width='280' height='210' rx='32' fill='%230F172A'/%3E%3Ccircle cx='320' cy='225' r='64' fill='%232563EB'/%3E%3Ctext x='320' y='425' font-family='Arial,sans-serif' font-size='22' font-weight='700' fill='%230F172A' text-anchor='middle'%3EAeroPulse Side Case%3C/text%3E%3C/svg%3E"
+      ],
+      "category": "Electronics",
+      "subcategory": "Audio",
+      "deliveryOptions": ["Seller Delivery", "Supermarket Delivery"],
+      "searchKeywords": ["aeropulse", "headphones", "wireless", "anc", "audio", "electronics"],
+      "status": "published",
+      "isAvailable": true,
+      "isFeatured": true,
+      "isRecommended": true
+    },
+    {
+      "id": "prod_demo_watch_02",
+      "name": "ChronoCraft Field Automatic Watch",
+      "description": "Brushed 40mm stainless steel field watch with sapphire crystal, luminous dial markers, 100m water resistance, and interchangeable nylon strap.",
+      "price": 220,
+      "originalPrice": 220,
+      "currency": "USD",
+      "stock": 9,
+      "stockQuantity": 9,
+      "images": [
+        "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='480' viewBox='0 0 640 480'%3E%3Crect width='640' height='480' fill='%23F8FAFC'/%3E%3Crect x='280' y='60' width='80' height='360' rx='14' fill='%231E293B'/%3E%3Ccircle cx='320' cy='240' r='96' fill='%23FFFFFF' stroke='%230F172A' stroke-width='16'/%3E%3Cline x1='320' y1='240' x2='320' y2='185' stroke='%230F172A' stroke-width='8' stroke-linecap='round'/%3E%3Cline x1='320' y1='240' x2='365' y2='240' stroke='%232563EB' stroke-width='6' stroke-linecap='round'/%3E%3C/svg%3E",
+        "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='480' viewBox='0 0 640 480'%3E%3Crect width='640' height='480' fill='%23EFF6FF'/%3E%3Ccircle cx='320' cy='220' r='105' fill='%230F172A'/%3E%3Ccircle cx='320' cy='220' r='82' fill='%231D4ED8'/%3E%3Ctext x='320' y='425' font-family='Arial,sans-serif' font-size='22' font-weight='700' fill='%230F172A' text-anchor='middle'%3EChronoCraft Caseback%3C/text%3E%3C/svg%3E"
+      ],
+      "category": "Watches",
+      "subcategory": "Automatic",
+      "deliveryOptions": ["Seller Delivery", "Supermarket Delivery"],
+      "searchKeywords": ["chronocraft", "watch", "watches", "automatic", "timepiece"],
+      "status": "published",
+      "isAvailable": true,
+      "isFeatured": true,
+      "isRecommended": false
+    },
+    {
+      "id": "prod_demo_apples_03",
+      "name": "Orchard Gold Organic Honeycrisp Box (4 kg)",
+      "description": "Crisp, orchard-picked organic Honeycrisp apples packed in a protective 4 kg family crate for same-day local delivery.",
+      "price": 19.5,
+      "compareAtPrice": 24.5,
+      "originalPrice": 24.5,
+      "discountedPrice": 19.5,
+      "discountPercentage": 20,
+      "currency": "USD",
+      "stock": 35,
+      "stockQuantity": 35,
+      "images": [
+        "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='480' viewBox='0 0 640 480'%3E%3Crect width='640' height='480' fill='%23ECFDF5'/%3E%3Ccircle cx='270' cy='240' r='78' fill='%23DC2626'/%3E%3Ccircle cx='370' cy='250' r='72' fill='%23EF4444'/%3E%3Cpath d='M310 150 Q335 120 365 140' stroke='%23059669' stroke-width='12' fill='none'/%3E%3Ctext x='320' y='425' font-family='Arial,sans-serif' font-size='22' font-weight='700' fill='%230F172A' text-anchor='middle'%3EOrchard Fresh Apples%3C/text%3E%3C/svg%3E",
+        "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='480' viewBox='0 0 640 480'%3E%3Crect width='640' height='480' fill='%23F8FAFC'/%3E%3Crect x='170' y='140' width='300' height='190' rx='20' fill='%23059669'/%3E%3Ctext x='320' y='245' font-family='Arial,sans-serif' font-size='28' font-weight='700' fill='%23FFFFFF' text-anchor='middle'%3E4 KG FARM CRATE%3C/text%3E%3C/svg%3E"
+      ],
+      "category": "Fruits",
+      "subcategory": "Fresh Produce",
+      "deliveryOptions": ["Seller Delivery"],
+      "searchKeywords": ["apples", "fruits", "organic", "honeycrisp", "fresh"],
+      "status": "published",
+      "isAvailable": true,
+      "isFeatured": false,
+      "isRecommended": true
+    },
+    {
+      "id": "prod_demo_jacket_04",
+      "name": "Harborline All-Weather Canvas Jacket",
+      "description": "Breathable waxed-cotton utility jacket featuring double-stitched seams, storm cuffs, and deep snap-closure pockets.",
+      "price": 95,
+      "originalPrice": 95,
+      "currency": "USD",
+      "stock": 14,
+      "stockQuantity": 14,
+      "images": [
+        "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='480' viewBox='0 0 640 480'%3E%3Crect width='640' height='480' fill='%23EFF6FF'/%3E%3Cpath d='M220 110 L420 110 L470 210 L420 235 L400 185 L400 370 L240 370 L240 185 L220 235 L170 210 Z' fill='%231D4ED8'/%3E%3Ctext x='320' y='430' font-family='Arial,sans-serif' font-size='22' font-weight='700' fill='%230F172A' text-anchor='middle'%3EHarborline Front%3C/text%3E%3C/svg%3E",
+        "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='480' viewBox='0 0 640 480'%3E%3Crect width='640' height='480' fill='%23F8FAFC'/%3E%3Crect x='210' y='100' width='220' height='260' rx='24' fill='%230F172A'/%3E%3Ctext x='320' y='240' font-family='Arial,sans-serif' font-size='22' font-weight='700' fill='%23FFFFFF' text-anchor='middle'%3EWeatherproof Detail%3C/text%3E%3C/svg%3E"
+      ],
+      "category": "Clothing",
+      "subcategory": "Outerwear",
+      "deliveryOptions": ["Seller Delivery", "Supermarket Delivery"],
+      "searchKeywords": ["harborline", "jacket", "clothing", "outerwear", "canvas"],
+      "status": "published",
+      "isAvailable": true,
+      "isFeatured": false,
+      "isRecommended": true
+    },
+    {
+      "id": "prod_demo_tote_05",
+      "name": "Everyday Structured Canvas Tote (Draft)",
+      "description": "Heavyweight 16oz organic cotton tote with internal laptop sleeve and reinforced leather straps.",
+      "price": 48,
+      "originalPrice": 48,
+      "currency": "USD",
+      "stock": 12,
+      "stockQuantity": 12,
+      "images": [
+        "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='480' viewBox='0 0 640 480'%3E%3Crect width='640' height='480' fill='%23F8FAFC'/%3E%3Crect x='220' y='160' width='200' height='200' rx='18' fill='%232563EB'/%3E%3Cpath d='M265 160 C265 95 375 95 375 160' fill='none' stroke='%230F172A' stroke-width='16'/%3E%3C/svg%3E",
+        "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='480' viewBox='0 0 640 480'%3E%3Crect width='640' height='480' fill='%23EFF6FF'/%3E%3Crect x='220' y='160' width='200' height='200' rx='18' fill='%230F172A'/%3E%3Ctext x='320' y='270' font-family='Arial,sans-serif' font-size='22' font-weight='700' fill='%23FFFFFF' text-anchor='middle'%3ELaptop Sleeve%3C/text%3E%3C/svg%3E"
+      ],
+      "category": "Accessories",
+      "subcategory": "Bags",
+      "deliveryOptions": ["Seller Delivery", "Supermarket Delivery"],
+      "searchKeywords": ["tote", "bag", "accessories", "canvas"],
+      "status": "draft",
+      "isAvailable": false,
+      "isFeatured": false,
+      "isRecommended": false
+    }
+  ],
+  "demoOrder": {
+    "id": "ORD-DEMO01",
+    "sellerOrderId": "SO-DEMO01-01",
+    "items": [
+      {
+        "productId": "prod_demo_headphones_01",
+        "productName": "AeroPulse Wireless ANC Headphones",
+        "quantity": 1,
+        "unitPrice": 119,
+        "total": 119
+      },
+      {
+        "productId": "prod_demo_apples_03",
+        "productName": "Orchard Gold Organic Honeycrisp Box (4 kg)",
+        "quantity": 1,
+        "unitPrice": 19.5,
+        "total": 19.5
+      }
+    ],
+    "subtotal": 138.5,
+    "deliveryFee": 0,
+    "total": 138.5,
+    "deliveryMethod": "Seller Delivery",
+    "paymentMethod": "Cash on Delivery",
+    "status": "Pending",
+    "notes": "Demo order seeded for end-to-end fulfilment walkthrough"
+  },
+  "demoConversation": {
+    "id": "conv_demo_01",
+    "productId": "prod_demo_headphones_01",
+    "messages": [
+      {
+        "id": "msg_demo_01",
+        "sender": "customer",
+        "senderName": "Demo Customer",
+        "text": "Hi! Do the AeroPulse headphones include a USB-C charging cable in the box?"
+      },
+      {
+        "id": "msg_demo_02",
+        "sender": "seller",
+        "senderName": "Northbridge Artisanal Goods",
+        "text": "Yes, a braided USB-C cable and travel pouch are included in every sealed box."
+      }
+    ]
+  }
+}
